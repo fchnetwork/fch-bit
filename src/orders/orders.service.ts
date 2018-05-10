@@ -8,6 +8,10 @@ import { RegisterOrderDto } from './dto/register-order.dto';
 export class OrdersService {
   constructor(@Inject('OrderModelToken') private readonly orderModel: Model<Order>) {}
 
+  // initWeb3(){
+  //   return new Web3( new Web3.providers.HttpProvider(environment.HttpProvider)); 
+  // }
+
   async create(registerOrderDto: RegisterOrderDto): Promise<Order> {
     const registeredOrder = new this.orderModel(registerOrderDto);
     // TODO: implement logic when connect with node
@@ -15,6 +19,7 @@ export class OrdersService {
   }
 
   async findAll(): Promise<Order[]> {
+    console.log(process.env.httpProvider);
     return await this.orderModel.find().exec();
   }
 
