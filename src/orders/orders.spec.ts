@@ -1,12 +1,13 @@
 import { OrdersController } from './orders.controller';
 import { OrdersService } from './orders.service';
+import { Model } from 'mongoose';
 
 describe('OrdersController', () => {
   let ordersController: OrdersController;
   let ordersService: OrdersService;
 
   beforeEach(() => {
-    ordersService = new OrdersService();
+    ordersService = new OrdersService(Model);
     ordersController = new OrdersController(ordersService);
   });
 
