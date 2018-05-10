@@ -1,12 +1,13 @@
 import { OrdersController } from './orders.controller';
 import { OrdersService } from './orders.service';
+import { Model } from 'mongoose';
 
-describe('OrdersController', () => {
+describe('Orders', () => {
   let ordersController: OrdersController;
   let ordersService: OrdersService;
 
   beforeEach(() => {
-    ordersService = new OrdersService();
+    ordersService = new OrdersService(Model);
     ordersController = new OrdersController(ordersService);
   });
 
@@ -31,11 +32,24 @@ describe('OrdersController', () => {
 
   describe('createOrder', () => {
     it('should return one object', async () => {
-      const order = {name: 'test', age: 10, breed: 'any'};
-      const result = {name: 'test', age: 10, breed: 'any'};
+      const order = {amount: 0.1, assetId: '1ss1xd1', orderId: '1ss1xd1'};
+      const result = {status: 'OK', paymentId: undefined};
       jest.spyOn(ordersService, 'create').mockImplementation(() => result);
-      expect(await ordersController.create(order)).toBe(result);
+      expect(await ordersController.create(order)).toEqual(result);
       expect(ordersService.create).toBeCalledWith(order);
+    });
+  });
+
+  describe('updateOrder', () => {
+    it('should update order, call function and return one object with status', async () => {
+      const order = {
+        _id: '5af43f127da0013d5334269f',
+        orderId: 'new Id65',
+      };
+      const result = {status: 'Ok'};
+      jest.spyOn(ordersService, 'update').mockImplementation(() => result);
+      expect(await ordersController.update(order)).toEqual(result);
+      expect(ordersService.update).toBeCalledWith(order);
     });
   });
 });

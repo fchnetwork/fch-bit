@@ -7,7 +7,7 @@
     "start": "nodemon index.js",
     "prestart:prod": "tsc",
     "start:prod": "node dist/main.js",
-    "jest": "jest"
+    "jest": "jest --watch"
   },
   "dependencies": {
     "@nestjs/common": "^4.3.0",
