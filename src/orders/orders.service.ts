@@ -15,4 +15,8 @@ export class OrdersService {
   async findAll(): Promise<Order[]> {
     return await this.orderModel.find().exec();
   }
+
+  async findById(id): Promise<Order> {
+    return await this.orderModel.findById(id).exec();
+  }
 }

@@ -5,15 +5,20 @@ import { Order } from './interfaces/order.interface';
 
 @Controller('orders')
 export class OrdersController {
-  constructor(private readonly registerOrderService: OrdersService) {}
+  constructor(private readonly ordersService: OrdersService) {}
 
   @Post()
   async create(@Body() registerOrderDto: RegisterOrderDto) {
-    this.registerOrderService.create(registerOrderDto);
+    return this.ordersService.create(registerOrderDto);
   }
 
   @Get()
   async findAll(): Promise<Order[]> {
-    return this.registerOrderService.findAll();
+    return this.ordersService.findAll();
+  }
+
+  @Get(':id')
+  async findById(@Param() params): Promise<Order> {
+    return this.ordersService.findById(params.id);
   }
 }

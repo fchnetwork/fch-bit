@@ -4,9 +4,10 @@
   "description": "Nest TypeScript starter repository",
   "license": "MIT",
   "scripts": {
-    "start": "node index.js",
+    "start": "nodemon index.js",
     "prestart:prod": "tsc",
-    "start:prod": "node dist/main.js"
+    "start:prod": "node dist/main.js",
+    "jest": "jest"
   },
   "dependencies": {
     "@nestjs/common": "^4.3.0",
@@ -21,8 +22,25 @@
     "typescript": "^2.4.2"
   },
   "devDependencies": {
+    "@types/jest": "^22.2.3",
     "@types/mongoose": "^4.7.23",
     "@types/node": "^7.0.41",
+    "jest": "^22.4.3",
+    "ts-jest": "^22.4.5",
     "ts-node": "^3.3.0"
+  },
+  "jest": {
+    "transform": {
+      "^.+\\.tsx?$": "ts-jest"
+    },
+    "testRegex": "(/__tests__/.*|(\\.|/)(test|spec))\\.(jsx?|tsx?)$",
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "js",
+      "jsx",
+      "json",
+      "node"
+    ]
   }
 }
