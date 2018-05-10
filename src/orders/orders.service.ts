@@ -23,7 +23,7 @@ export class OrdersService {
   }
 
   async update(data: UpdateOrderDto): Promise<Order> {
-    const order = await this.orderModel.findOneAndUpdate({_id: data._id}, {orderId: data.orderId}, (err, doc)=>{
+    const order = await this.orderModel.findOneAndUpdate({_id: data._id}, {orderId: data.orderId}, (err, doc) => {
       return doc;
     });
     return order;

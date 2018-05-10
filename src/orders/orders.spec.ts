@@ -2,7 +2,7 @@ import { OrdersController } from './orders.controller';
 import { OrdersService } from './orders.service';
 import { Model } from 'mongoose';
 
-describe('OrdersController', () => {
+describe('Orders', () => {
   let ordersController: OrdersController;
   let ordersService: OrdersService;
 
@@ -37,6 +37,19 @@ describe('OrdersController', () => {
       jest.spyOn(ordersService, 'create').mockImplementation(() => result);
       expect(await ordersController.create(order)).toEqual(result);
       expect(ordersService.create).toBeCalledWith(order);
+    });
+  });
+
+  describe('updateOrder', () => {
+    it('should update order, call function and return one object with status', async () => {
+      const order = {
+        _id: '5af43f127da0013d5334269f',
+        orderId: 'new Id65',
+      };
+      const result = {status: 'Ok'};
+      jest.spyOn(ordersService, 'update').mockImplementation(() => result);
+      expect(await ordersController.update(order)).toEqual(result);
+      expect(ordersService.update).toBeCalledWith(order);
     });
   });
 });
