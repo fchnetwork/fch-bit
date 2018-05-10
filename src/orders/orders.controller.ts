@@ -1,11 +1,11 @@
 import { Controller, Get, Post, Body, Param } from '@nestjs/common';
 import { RegisterOrderDto } from './dto/register-order.dto';
-import { RegisterOrderService } from './register-order.service';
+import { OrdersService } from './orders.service';
 import { Order } from './interfaces/order.interface';
 
-@Controller('register-order')
-export class RegisterOrderController {
-  constructor(private readonly registerOrderService: RegisterOrderService) {}
+@Controller('orders')
+export class OrdersController {
+  constructor(private readonly registerOrderService: OrdersService) {}
 
   @Post()
   async create(@Body() registerOrderDto: RegisterOrderDto) {
