@@ -4,7 +4,7 @@ import { Order } from './interfaces/order.interface';
 import { RegisterOrderDto } from './dto/register-order.dto';
 
 @Component()
-export class RegisterOrderService {
+export class OrdersService {
   constructor(@Inject('OrderModelToken') private readonly orderModel: Model<Order>) {}
 
   async create(registerOrderDto: RegisterOrderDto): Promise<Order> {
