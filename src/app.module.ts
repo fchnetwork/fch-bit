@@ -1,7 +1,15 @@
 import { Module } from '@nestjs/common';
-import { CatsModule } from './cats/cats.module';
+import { OrdersModule } from './orders/orders.module';
+import { SwapModule } from './swap/swap.module';
+import { TransactionsModule } from './transactions/transactions.module';
+import { AccountModule } from './account/account.module';
 
 @Module({
-  imports: [CatsModule],
+  imports: [
+    OrdersModule,
+    SwapModule,
+    TransactionsModule,
+    AccountModule,
+  ],
 })
 export class ApplicationModule {}
