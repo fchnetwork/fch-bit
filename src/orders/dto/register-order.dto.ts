@@ -1,5 +1,5 @@
 export class RegisterOrderDto {
   readonly amount: number;
-  readonly assetID: string;
-  readonly orderID: string;
+  readonly assetId: string;
+  readonly orderId: string;
 }

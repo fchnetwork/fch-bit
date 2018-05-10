@@ -31,7 +31,7 @@ describe('OrdersController', () => {
 
   describe('createOrder', () => {
     it('should return one object', async () => {
-      const order = {amount: 0.1, assetID: '1ss1xd1', orderID: '1ss1xd1'};
+      const order = {amount: 0.1, assetId: '1ss1xd1', orderId: '1ss1xd1'};
       const result = {status: 'OK', paymentId: undefined};
       jest.spyOn(ordersService, 'create').mockImplementation(() => result);
       expect(await ordersController.create(order)).toEqual(result);
