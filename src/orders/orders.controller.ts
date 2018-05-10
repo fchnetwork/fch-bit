@@ -9,7 +9,11 @@ export class OrdersController {
 
   @Post()
   async create(@Body() registerOrderDto: RegisterOrderDto) {
-    return this.ordersService.create(registerOrderDto);
+    const order = await this.ordersService.create(registerOrderDto);
+    return {
+      status: 'OK',
+      paymentId: order._id,
+    };
   }
 
   @Get()

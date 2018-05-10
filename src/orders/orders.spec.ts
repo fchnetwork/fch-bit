@@ -31,10 +31,10 @@ describe('OrdersController', () => {
 
   describe('createOrder', () => {
     it('should return one object', async () => {
-      const order = {name: 'test', age: 10, breed: 'any'};
-      const result = {name: 'test', age: 10, breed: 'any'};
+      const order = {amount: 0.1, assetID: '1ss1xd1', orderID: '1ss1xd1'};
+      const result = {status: 'OK', paymentId: undefined};
       jest.spyOn(ordersService, 'create').mockImplementation(() => result);
-      expect(await ordersController.create(order)).toBe(result);
+      expect(await ordersController.create(order)).toEqual(result);
       expect(ordersService.create).toBeCalledWith(order);
     });
   });

@@ -9,6 +9,7 @@ export class OrdersService {
 
   async create(registerOrderDto: RegisterOrderDto): Promise<Order> {
     const registeredOrder = new this.orderModel(registerOrderDto);
+    // TODO: implement logic when connect with node
     return await registeredOrder.save();
   }
 
