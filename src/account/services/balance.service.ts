@@ -14,9 +14,7 @@ export class BalanceService {
   }
 
   async getBalance(acc): Promise<any> {
-    // console.log(this.web3.eth.getAccounts());
     const accounts = await this.web3.eth.getAccounts();
-    console.log(accounts);
     const address = accounts[acc];
     const isAddress = await this.web3.utils.isAddress(address);
     if (isAddress) {
