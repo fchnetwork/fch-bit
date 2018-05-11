@@ -3,14 +3,19 @@ import { Model } from 'mongoose';
 import { Component, Inject } from '@nestjs/common';
 import { Order } from './interfaces/order.interface';
 import { RegisterOrderDto } from './dto/register-order.dto';
+const Web3 = require('web3');
 
 @Component()
 export class OrdersService {
-  constructor(@Inject('OrderModelToken') private readonly orderModel: Model<Order>) {}
+  web3: any;
 
-  // initWeb3(){
-  //   return new Web3( new Web3.providers.HttpProvider(environment.HttpProvider)); 
-  // }
+  constructor(@Inject('OrderModelToken') private readonly orderModel: Model<Order>) {
+    this.web3 = this.initWeb3();
+  }
+
+  initWeb3 = () => {
+    return new Web3( new Web3.providers.HttpProvider(process.env.httpProvider));
+  }
 
   async create(registerOrderDto: RegisterOrderDto): Promise<Order> {
     const registeredOrder = new this.orderModel(registerOrderDto);
@@ -19,7 +24,6 @@ export class OrdersService {
   }
 
   async findAll(): Promise<Order[]> {
-    console.log(process.env.httpProvider);
     return await this.orderModel.find().exec();
   }
 
