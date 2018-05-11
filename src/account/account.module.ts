@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
 import { DatabaseModule } from '../database/database.module';
 import { AccountController } from './account.controller';
-import { BalanceService } from './services/balance.service';
+import { AccountService } from './services/account.service';
 
 @Module({
   imports: [DatabaseModule],
   controllers: [AccountController],
-  components: [BalanceService],
+  components: [AccountService],
 })
 export class AccountModule {}
