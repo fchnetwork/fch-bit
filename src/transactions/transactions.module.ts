@@ -1,17 +1,14 @@
 import { Module } from '@nestjs/common';
 import { DatabaseModule } from '../database/database.module';
-import { TransferAeroModule } from './transfer-aero/transfer-aero.module';
-import { TransferAeroTokenModule } from './transfer-aero-token/transfer-aero-token.module';
-import { TransferEtherModule } from './transfer-ether/transfer-ether.module';
-import { TransferEthTokenModule } from './transfer-eth-token/transfer-eth-token.module';
+import { TransactionsController } from './transactions.controller';
+import { TransactionsService } from './services/transactions.service';
+import { AccountService } from '../account/services/account.service';
 
 @Module({
   imports: [
     DatabaseModule,
-    TransferAeroModule,
-    TransferAeroTokenModule,
-    TransferEtherModule,
-    TransferEthTokenModule,
   ],
+  controllers: [TransactionsController],
+  components: [TransactionsService, AccountService],
 })
 export class TransactionsModule {}

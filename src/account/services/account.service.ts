@@ -24,7 +24,7 @@ export class AccountService {
     const isAddress = await this.web3.utils.isAddress(address);
     if (isAddress) {
       const balance = await this.web3.eth.getBalance(address).then((res) => {
-        return `${this.web3.utils.fromWei(res, 'ether')} aero`;
+        return this.web3.utils.fromWei(res, 'ether');
       }).catch((err) => {
         return err;
       });
