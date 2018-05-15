@@ -1,6 +1,8 @@
 import { Component, Inject } from '@nestjs/common';
 import { TransferEthDto } from '../dto/transfer-eth.dto';
 import { AccountService } from '../../account/services/account.service';
+import { tokensABI } from './../../abi/tokens';
+import { TransferEthTokenDto } from '../dto/transfer-eth-token.dto';
 
 const Tx = require('ethereumjs-tx');
 const Web3 = require('web3');
@@ -22,10 +24,25 @@ export class TransactionsService {
 
   // }
 
-  async transferEth(transactionData: TransferEthDto): Promise<any> {
+  async transfer(transactionData: TransferEthDto): Promise<any> {
     const sender = await this.accountService.getAddresses();
     return new Promise((resolve, reject) => {
-      this.prepareTransaction(sender[transactionData.accountKey], transactionData.receiverAddress, transactionData.amount, '')
+      const data = this.web3.utils.asciiToHex( '' );
+      this.prepareTransaction(sender[transactionData.accountKey], transactionData.receiverAddress, transactionData.amount, data)
+      .then((res) => {
+        resolve(res);
+      });
+    });
+    // return await transferEthDto;
+  }
+
+  async transferTokens(transactionData: TransferEthTokenDto): Promise<any> {
+    const sender = await this.accountService.getAddresses();
+    return new Promise((resolve, reject) => {
+      const tokensContract = new this.web3.eth.Contract(tokensABI, transactionData.contractAddress, { from: sender[transactionData.accountKey], gas: 4000000});
+      const data = tokensContract.methods.transfer(transactionData.receiverAddress, transactionData.amount).encodeABI();
+      const amount = 0;
+      this.prepareTransaction(sender[transactionData.accountKey], transactionData.receiverAddress, amount, this.web3.utils.asciiToHex( '' ))
       .then((res) => {
         resolve(res);
       });
@@ -38,7 +55,7 @@ export class TransactionsService {
         const sendTo              = ethJsUtil.toChecksumAddress( to );
         const from                = ethJsUtil.toChecksumAddress( sender );
         const txValue             = this.web3.utils.numberToHex(this.web3.utils.toWei( amount.toString(), 'ether'));
-        const txData              = this.web3.utils.asciiToHex( data );
+        const txData              = data;
         const getGasPrice         = this.web3.eth.getGasPrice();
         const getTransactionCount = this.web3.eth.getTransactionCount( from );
         const estimateGas         = this.web3.eth.estimateGas({to: sendTo, data: txData});
