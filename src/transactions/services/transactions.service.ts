@@ -38,7 +38,7 @@ export class TransactionsService {
       const tokensContract = new this.web3.eth.Contract(tokensABI, transactionData.contractAddress, { from: sender[transactionData.accountKey], gas: 4000000});
       const data = tokensContract.methods.transfer(transactionData.receiverAddress, transactionData.amount).encodeABI();
       const amount = 0;
-      this.prepareTransaction(sender[transactionData.accountKey], transactionData.receiverAddress, amount, this.web3.utils.asciiToHex( '' ))
+      this.prepareTransaction(sender[transactionData.accountKey], transactionData.receiverAddress, amount, data)
       .then((res) => {
         resolve(res);
       });
