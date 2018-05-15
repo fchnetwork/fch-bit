@@ -1,7 +1,8 @@
 import { Controller, Get, Post, Put, Body, Param, UseGuards } from '@nestjs/common';
 import { TransactionsService } from './services/transactions.service';
 import { TransferEthDto } from './dto/transfer-eth.dto';
-import { CallTransactionGuard } from './transactions.guard';
+import { CallTransactionGuard, CallTransactionTokenGuard } from './transactions.guard';
+import { TransferEthTokenDto } from './dto/transfer-eth-token.dto';
 
 @Controller('transaction')
 export class TransactionsController {
@@ -9,7 +10,13 @@ export class TransactionsController {
 
   @Post('eth')
   @UseGuards(CallTransactionGuard)
-  async create(@Body() transferEthDto: TransferEthDto) {
-    return await this.transactionsService.transferEth(transferEthDto);
+  async transfer(@Body() transferEthDto: TransferEthDto) {
+    return await this.transactionsService.transfer(transferEthDto);
+  }
+
+  @Post('tokens')
+  @UseGuards(CallTransactionTokenGuard)
+  async transferTokens(@Body() transferEthTokenDto: TransferEthTokenDto) {
+    return await this.transactionsService.transferTokens(transferEthTokenDto);
   }
 }

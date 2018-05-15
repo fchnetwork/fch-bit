@@ -10,6 +10,11 @@ export class AccountController {
     return this.accountService.getBalance(params.id);
   }
 
+  @Get(':id/token-balance/:address')
+  async getTokenBalance(@Param() params): Promise<any> {
+    return this.accountService.getTokenBalance(params.id, params.address);
+  }
+
   @Get('addresses')
   async getAddresses(): Promise<any> {
     return this.accountService.getAddresses();

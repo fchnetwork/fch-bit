@@ -1,4 +1,5 @@
 import { Component, Inject } from '@nestjs/common';
+import { tokensABI } from '../../abi/tokens';
 const Web3 = require('web3');
 
 @Component()
@@ -31,6 +32,17 @@ export class AccountService {
       return balance;
     } else {
       return 'Wrong aerum address';
+    }
+  }
+
+  async getTokenBalance(acc, tokenAddress) {
+    const addresses = await this.getAddresses();
+    const address = addresses[acc];
+    const isAddress = await this.web3.utils.isAddress(address);
+    const isTokenAddress = await this.web3.utils.isAddress(tokenAddress);
+    if (isAddress && isTokenAddress) {
+      const tokensContract = new this.web3.eth.Contract(tokensABI, tokenAddress);
+      return await tokensContract.methods.balanceOf(address).call({});
     }
   }
 }

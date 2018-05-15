@@ -17,3 +17,20 @@ export class CallTransactionGuard implements CanActivate {
     }
   }
 }
+
+@Guard()
+export class CallTransactionTokenGuard implements CanActivate {
+  constructor(
+   private accountService: AccountService,
+  ){}
+
+  public async canActivate(request: any): Promise<any> {
+    const balance = await this.accountService.getTokenBalance(request.body.accountKey, request.body.contractAddress);
+    if (balance > request.body.amount) {
+      return true;
+    } else {
+      console.log('no enough tokens');
+      return false;
+    }
+  }
+}
