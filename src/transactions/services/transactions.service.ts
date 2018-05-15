@@ -20,10 +20,6 @@ export class TransactionsService {
     return new Web3( new Web3.providers.HttpProvider(process.env.httpProvider));
   }
 
-  // async createTransaction() {
-
-  // }
-
   async transfer(transactionData: TransferEthDto): Promise<any> {
     const sender = await this.accountService.getAddresses();
     return new Promise((resolve, reject) => {
