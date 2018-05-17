@@ -1,5 +1,15 @@
 export class RegisterOrderDto {
-  readonly amount: number;
-  readonly assetId: string;
-  readonly orderId: string;
+  orderId: string;
+  type: string;
+  timestamp: number;
+  accountIndex: number;
+  customerAddress: string;
+  amount: number;
+  tokenANS: string;
+  transaction: {
+    id: string;
+    status: string;
+    logs: Array<object>;
+    receipt: object;
+  };
 }
