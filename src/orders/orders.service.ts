@@ -1,8 +1,10 @@
+import { TransferDto } from './../transactions/dto/transfer.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { Model } from 'mongoose';
 import { Component, Inject } from '@nestjs/common';
 import { Order } from './interfaces/order.interface';
 import { RegisterOrderDto } from './dto/register-order.dto';
+import * as Moment from 'moment';
 const Web3 = require('web3');
 
 @Component()
@@ -17,8 +19,23 @@ export class OrdersService {
     return new Web3( new Web3.providers.HttpProvider(process.env.httpProvider));
   }
 
-  async create(registerOrderDto: RegisterOrderDto): Promise<Order> {
-    const registeredOrder = new this.orderModel(registerOrderDto);
+  async create(data): Promise<Order> {
+    const registerOrderData: RegisterOrderDto = {
+      type: data.type,
+      orderId: data.orderId,
+      timestamp: Moment(new Date()).unix(),
+      accountIndex: data.accountKey,
+      customerAddress: data.receiverAddress,
+      amount: data.amount,
+      tokenANS: data.tokenANS || '',
+      transaction: {
+        id: '',
+        status: 'Pending',
+        logs: [],
+        receipt: {},
+      },
+    };
+    const registeredOrder = new this.orderModel(registerOrderData);
     // TODO: implement logic when connect with node
     return await registeredOrder.save();
   }
@@ -31,8 +48,8 @@ export class OrdersService {
     return await this.orderModel.findById(id).exec();
   }
 
-  async update(data: UpdateOrderDto): Promise<Order> {
-    const order = await this.orderModel.findOneAndUpdate({_id: data._id}, {orderId: data.orderId}, (err, doc) => {
+  async update(data: any): Promise<Order> {
+    const order = await this.orderModel.findOneAndUpdate({_id: data._id}, {transaction: {id: data.transactionId, status: data.status}}, (err, doc) => {
       return doc;
     });
     return order;

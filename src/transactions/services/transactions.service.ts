@@ -1,8 +1,8 @@
 import { Component, Inject } from '@nestjs/common';
-import { TransferEthDto } from '../dto/transfer-eth.dto';
+import { TransferDto } from '../dto/transfer.dto';
 import { AccountService } from '../../account/services/account.service';
 import { tokensABI } from './../../abi/tokens';
-import { TransferEthTokenDto } from '../dto/transfer-eth-token.dto';
+import { OrdersService } from '../../orders/orders.service';
 
 const Tx = require('ethereumjs-tx');
 const Web3 = require('web3');
@@ -12,7 +12,10 @@ const ethJsUtil = require('ethereumjs-util');
 export class TransactionsService {
   web3: any;
 
-  constructor(private accountService: AccountService) {
+  constructor(
+    private accountService: AccountService,
+    private ordersService: OrdersService,
+  ) {
     this.web3 = this.initWeb3();
   }
 
@@ -20,30 +23,47 @@ export class TransactionsService {
     return new Web3( new Web3.providers.HttpProvider(process.env.httpProvider));
   }
 
-  async transfer(transactionData: TransferEthDto): Promise<any> {
+  updateTransaction(order, transfer) {
+    const updateData = {
+      _id: order._id,
+      transactionId: transfer.blockHash,
+      status: 'success',
+    };
+    this.ordersService.update(updateData);
+  }
+
+  async transfer(transactionData: TransferDto): Promise<any> {
     const sender = await this.accountService.getAddresses();
     return new Promise((resolve, reject) => {
       const data = this.web3.utils.asciiToHex( '' );
-      this.prepareTransaction(sender[transactionData.accountKey], transactionData.receiverAddress, transactionData.amount, data)
-      .then((res) => {
-        resolve(res);
+      transactionData.type = 'refund aero';
+      this.ordersService.create(transactionData).then((orderRes) => {
+        this.prepareTransaction(sender[transactionData.accountKey], transactionData.receiverAddress, transactionData.amount, data)
+        .then((transferRes) => {
+          resolve(transferRes);
+          this.updateTransaction(orderRes, transferRes);
+        });
       });
+
     });
-    // return await transferEthDto;
   }
 
-  async transferTokens(transactionData: TransferEthTokenDto): Promise<any> {
+  async transferTokens(transactionData: TransferDto): Promise<any> {
     const sender = await this.accountService.getAddresses();
     return new Promise((resolve, reject) => {
       const tokensContract = new this.web3.eth.Contract(tokensABI, transactionData.contractAddress, { from: sender[transactionData.accountKey], gas: 4000000});
       const data = tokensContract.methods.transfer(transactionData.receiverAddress, transactionData.amount).encodeABI();
+      transactionData.type = 'refund token';
       const amount = 0;
-      this.prepareTransaction(sender[transactionData.accountKey], transactionData.receiverAddress, amount, data)
-      .then((res) => {
-        resolve(res);
+      this.ordersService.create(transactionData).then((orderRes) => {
+        this.prepareTransaction(sender[transactionData.accountKey], transactionData.receiverAddress, amount, data)
+        .then((transferRes) => {
+          resolve(transferRes);
+          this.updateTransaction(orderRes, transferRes);
+        });
       });
+
     });
-    // return await transferEthDto;
   }
 
   prepareTransaction(sender, to, amount, data ): Promise<any> {
@@ -67,7 +87,7 @@ export class TransactionsService {
                 nonce: this.web3.utils.toHex( nonce ),
                 gas: this.web3.utils.toHex( gas ),
                 // TODO: export it to any config and import from there
-                gasPrice: this.web3.utils.toHex( this.web3.utils.toWei( '1', 'gwei')),
+                gasPrice: this.web3.utils.toHex( this.web3.utils.toWei( '14', 'gwei')),
                 to,
                 value: txValue,
                 data: txData,
@@ -86,7 +106,6 @@ export class TransactionsService {
   createTransaction(rawTransaction){
     return new Promise((resolve, reject) => {
       const transaction = this.web3.eth.sendTransaction(rawTransaction).then((res) => {
-        console.log('res transaction', res);
         resolve(res);
       }).catch((err) => {
         console.log(err);
@@ -100,6 +119,7 @@ export class TransactionsService {
       const transaction = this.web3.eth.call(rawTransaction).then((res) => {
         resolve(res);
       }).catch((err) => {
+        console.log(err);
         reject(err);
       });
     });
