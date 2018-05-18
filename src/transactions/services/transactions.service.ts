@@ -23,13 +23,8 @@ export class TransactionsService {
     return new Web3( new Web3.providers.HttpProvider(process.env.httpProvider));
   }
 
-  updateTransaction(order, transfer) {
-    const updateData = {
-      _id: order._id,
-      transactionId: transfer.blockHash,
-      status: 'success',
-    };
-    this.ordersService.update(updateData);
+  updateTransaction(orderId, txHash, from, to) {
+    this.ordersService.update(orderId, txHash, from, to);
   }
 
   async transfer(transactionData: TransferDto): Promise<any> {
@@ -41,7 +36,7 @@ export class TransactionsService {
         this.prepareTransaction(sender[transactionData.accountKey], transactionData.receiverAddress, transactionData.amount, data)
         .then((transferRes) => {
           resolve(transferRes);
-          this.updateTransaction(orderRes, transferRes);
+          this.updateTransaction(orderRes._id, transferRes.transactionHash, sender[transactionData.accountKey], transactionData.receiverAddress);
         });
       });
 
@@ -56,10 +51,10 @@ export class TransactionsService {
       transactionData.type = 'refund token';
       const amount = 0;
       this.ordersService.create(transactionData).then((orderRes) => {
-        this.prepareTransaction(sender[transactionData.accountKey], transactionData.receiverAddress, amount, data)
+        this.prepareTransaction(sender[transactionData.accountKey], transactionData.contractAddress, amount, data)
         .then((transferRes) => {
           resolve(transferRes);
-          this.updateTransaction(orderRes, transferRes);
+          this.updateTransaction(orderRes._id, transferRes.transactionHash, sender[transactionData.accountKey], transactionData.receiverAddress);
         });
       });
 
@@ -74,9 +69,7 @@ export class TransactionsService {
         const txData              = data;
         const getGasPrice         = this.web3.eth.getGasPrice();
         const getTransactionCount = this.web3.eth.getTransactionCount( from );
-        const estimateGas         = this.web3.eth.estimateGas({to: sendTo, data: txData});
-
-        return Promise.all([getGasPrice, getTransactionCount, estimateGas])
+        return Promise.all([getGasPrice, getTransactionCount])
         .then( (values) => {
               const gasPrice = values[0];
               const nonce = parseInt(values[1], 10);
@@ -85,10 +78,10 @@ export class TransactionsService {
               const rawTransaction: any = {
                 from,
                 nonce: this.web3.utils.toHex( nonce ),
-                gas: this.web3.utils.toHex( gas ),
+                gasLimit: '0x3D0900',
                 // TODO: export it to any config and import from there
-                gasPrice: this.web3.utils.toHex( this.web3.utils.toWei( '14', 'gwei')),
-                to,
+                gasPrice: this.web3.utils.toHex( this.web3.utils.toWei( '1', 'gwei')),
+                to: sendTo,
                 value: txValue,
                 data: txData,
               };
@@ -121,6 +114,43 @@ export class TransactionsService {
       }).catch((err) => {
         console.log(err);
         reject(err);
+      });
+    });
+  }
+
+  async startWatching(data) {
+    const accounts = await this.accountService.getAddresses();
+    const tokensContract = new this.web3.eth.Contract(tokensABI, data.contractAddress, { from: accounts[1], gas: 4000000});
+    // console.dir(tokensContract);
+    const transferEvent  = tokensContract.events.Transfer((res) => {
+      console.log(res);
+    });
+    // console.dir(transferEvent);
+    // transferEvent.watch((err, res) => {
+    //   if (err) {
+    //     console.log(err);
+    //   } else {
+    //     console.log(res);
+    //   }
+    // });
+  }
+
+  payment(data) {
+    return new Promise((resolve, reject) => {
+      data.type = 'aero payment';
+      this.ordersService.create(data).then((orderRes) => {
+        this.startWatching(data);
+        resolve(orderRes);
+      });
+    });
+  }
+
+  tokenPayment(data) {
+    return new Promise((resolve, reject) => {
+      data.type = 'token payment';
+      this.ordersService.create(data).then((orderRes) => {
+        this.startWatching(data);
+        resolve(orderRes);
       });
     });
   }

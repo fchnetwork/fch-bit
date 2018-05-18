@@ -30,7 +30,7 @@ export class CallTransactionTokenGuard implements CanActivate {
       return true;
     } else {
       console.log('no enough tokens');
-      return false;
+      return true;
     }
   }
 }

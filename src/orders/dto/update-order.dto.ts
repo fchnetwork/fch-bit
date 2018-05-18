@@ -1,4 +1,6 @@
 export class UpdateOrderDto {
-  readonly _id!: string;
+  readonly txHash: string;
   readonly orderId: string;
+  readonly from: string;
+  readonly to: string;
 }

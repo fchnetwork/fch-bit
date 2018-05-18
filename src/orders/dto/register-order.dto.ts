@@ -1,11 +1,12 @@
 export class RegisterOrderDto {
-  orderId: string;
   type: string;
+  assetId: string;
   timestamp: number;
   accountIndex: number;
-  customerAddress: string;
+  customerAddress?: string;
   amount: number;
-  tokenANS: string;
+  tokenANS?: string;
+  contractAddress?: string;
   transaction: {
     id: string;
     status: string;

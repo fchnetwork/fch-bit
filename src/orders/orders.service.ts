@@ -22,12 +22,13 @@ export class OrdersService {
   async create(data): Promise<Order> {
     const registerOrderData: RegisterOrderDto = {
       type: data.type,
-      orderId: data.orderId,
+      assetId: data.assetId,
       timestamp: Moment(new Date()).unix(),
       accountIndex: data.accountKey,
-      customerAddress: data.receiverAddress,
+      customerAddress: data.receiverAddress || '',
       amount: data.amount,
       tokenANS: data.tokenANS || '',
+      contractAddress: data.contractAddress || 'aero payment',
       transaction: {
         id: '',
         status: 'Pending',
@@ -48,10 +49,21 @@ export class OrdersService {
     return await this.orderModel.findById(id).exec();
   }
 
-  async update(data: any): Promise<Order> {
-    const order = await this.orderModel.findOneAndUpdate({_id: data._id}, {transaction: {id: data.transactionId, status: data.status}}, (err, doc) => {
+  async update(orderId: any, txHash, from, to): Promise<any> {
+    const transaction = await this.web3.eth.getTransaction(txHash);
+    const order = await this.orderModel.findOne({_id: orderId});
+    let status;
+    console.log(transaction);
+    console.log(this.web3.utils.toAscii( transaction.input ));
+    if ((order.type === 'aero payment' || order.type === 'token payment') && transaction.from.toLowerCase() === from.toLowerCase() && transaction.to.toLowerCase() === to.toLowerCase() && String(transaction.value) === String(order.amount)) {
+      status = 'success';
+      console.log('works');
+    } else {
+      status = 'failed data verification';
+    }
+    const updatedTransaction = await this.orderModel.findOneAndUpdate({_id: orderId}, {transaction: {id: txHash, status}}, (err, doc) => {
       return doc;
     });
-    return order;
+    return updatedTransaction;
   }
 }
