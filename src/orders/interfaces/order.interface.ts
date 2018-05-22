@@ -1,7 +1,19 @@
 import { Document } from 'mongoose';
 
 export interface Order extends Document {
-  readonly name: string;
-  readonly age: number;
-  readonly breed: string;
+  type: string;
+  assetId: string;
+  orderId: string;
+  timestamp: number;
+  accountIndex: number;
+  customerAddress: string;
+  contractAddress: string;
+  amount: number;
+  tokenANS: string;
+  transaction: {
+    id: string;
+    status: string;
+    logs: [{}];
+    receipt: {},
+  };
 }

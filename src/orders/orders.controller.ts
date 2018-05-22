@@ -16,12 +16,14 @@ export class OrdersController {
     return {
       status: 'OK',
       paymentId: order._id,
+      assetId: order.assetId,
+      amount: order.amount,
     };
   }
 
   @Put()
-  async update(@Body() updateOrderDto: UpdateOrderDto): Promise<Order> {
-    return this.ordersService.update(updateOrderDto);
+  async update(@Body() body: UpdateOrderDto): Promise<Order> {
+    return await this.ordersService.update(body.orderId, body.txHash, body.from, body.to);
   }
 
   @Get()
