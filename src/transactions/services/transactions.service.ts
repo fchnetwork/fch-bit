@@ -101,7 +101,6 @@ export class TransactionsService {
       const transaction = this.web3.eth.sendTransaction(rawTransaction).then((res) => {
         resolve(res);
       }).catch((err) => {
-        console.log(err);
         reject(err);
       });
     });
@@ -112,34 +111,15 @@ export class TransactionsService {
       const transaction = this.web3.eth.call(rawTransaction).then((res) => {
         resolve(res);
       }).catch((err) => {
-        console.log(err);
         reject(err);
       });
     });
-  }
-
-  async startWatching(data) {
-    const accounts = await this.accountService.getAddresses();
-    const tokensContract = new this.web3.eth.Contract(tokensABI, data.contractAddress, { from: accounts[1], gas: 4000000});
-    // console.dir(tokensContract);
-    const transferEvent  = tokensContract.events.Transfer((res) => {
-      console.log(res);
-    });
-    // console.dir(transferEvent);
-    // transferEvent.watch((err, res) => {
-    //   if (err) {
-    //     console.log(err);
-    //   } else {
-    //     console.log(res);
-    //   }
-    // });
   }
 
   payment(data) {
     return new Promise((resolve, reject) => {
       data.type = 'aero payment';
       this.ordersService.create(data).then((orderRes) => {
-        this.startWatching(data);
         resolve(orderRes);
       });
     });
@@ -149,7 +129,6 @@ export class TransactionsService {
     return new Promise((resolve, reject) => {
       data.type = 'token payment';
       this.ordersService.create(data).then((orderRes) => {
-        this.startWatching(data);
         resolve(orderRes);
       });
     });

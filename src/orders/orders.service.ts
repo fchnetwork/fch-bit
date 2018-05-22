@@ -1,3 +1,4 @@
+import { tokensABI } from './../abi/tokens';
 import { TransferDto } from './../transactions/dto/transfer.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { Model } from 'mongoose';
@@ -16,7 +17,7 @@ export class OrdersService {
   }
 
   initWeb3 = () => {
-    return new Web3( new Web3.providers.HttpProvider(process.env.httpProvider));
+    return new Web3( new Web3.providers.WebsocketProvider(process.env.httpProvider));
   }
 
   async create(data): Promise<Order> {
@@ -49,21 +50,55 @@ export class OrdersService {
     return await this.orderModel.findById(id).exec();
   }
 
-  async update(orderId: any, txHash, from, to): Promise<any> {
-    const transaction = await this.web3.eth.getTransaction(txHash);
-    const order = await this.orderModel.findOne({_id: orderId});
-    let status;
-    console.log(transaction);
-    console.log(this.web3.utils.toAscii( transaction.input ));
-    if ((order.type === 'aero payment' || order.type === 'token payment') && transaction.from.toLowerCase() === from.toLowerCase() && transaction.to.toLowerCase() === to.toLowerCase() && String(transaction.value) === String(order.amount)) {
-      status = 'success';
-      console.log('works');
-    } else {
-      status = 'failed data verification';
-    }
-    const updatedTransaction = await this.orderModel.findOneAndUpdate({_id: orderId}, {transaction: {id: txHash, status}}, (err, doc) => {
-      return doc;
+  async verifyAndUpdate(order, transaction, from, to){
+    return new Promise((resolve, reject) => {
+      let status;
+      if ((order.type === 'aero payment' || order.type === 'token payment') && transaction.from.toLowerCase() === from.toLowerCase() && transaction.to.toLowerCase() === to.toLowerCase() && String(transaction.value) === String(order.amount)) {
+        status = 'success';
+      } else {
+        status = 'failed data verification';
+      }
+      const updatedTransaction = this.orderModel.findOneAndUpdate({_id: order._id}, {transaction: {id: transaction.txHash, status}}, (err, doc) => {
+        resolve(doc);
+      });
     });
-    return updatedTransaction;
+  }
+
+  async update(orderId: any, txHash, from, to): Promise<any> {
+    return new Promise((resolve, reject) => {
+      this.web3.eth.getTransactionReceipt(txHash, (transactionErr, transaction) => {
+        if (transactionErr) {
+          reject(transactionErr);
+        } else {
+          this.orderModel.findOne({_id: orderId}, (orderErr, order) => {
+            if (orderErr) {
+              reject(orderErr);
+            } else {
+              if (order.type === 'token payment') {
+                const tokensContract = new this.web3.eth.Contract(tokensABI, order.contractAddress, { from: order.customerAddress, gas: 4000000});
+                tokensContract.events.Transfer({}, { fromBlock: transaction.blockNumber, toBlock: 'latest' }, (contractEventsErr, eventsRes) => {
+                  if (contractEventsErr) {
+                    reject(contractEventsErr);
+                  } else {
+                    if (eventsRes.blockNumber === transaction.blockNumber) {
+                      transaction.from = eventsRes.returnValues._from;
+                      transaction.to = eventsRes.returnValues._to;
+                      transaction.value = eventsRes.returnValues._value;
+                      this.verifyAndUpdate(order, transaction, from, to).then((verified) => {
+                        resolve(verified);
+                      });
+                    }
+                  }
+                });
+              }
+              this.verifyAndUpdate(order, transaction, from, to).then((verified) => {
+                resolve(verified);
+              });
+            }
+          });
+        }
+      });
+    });
+
   }
 }

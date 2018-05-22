@@ -7,6 +7,7 @@ export interface Order extends Document {
   timestamp: number;
   accountIndex: number;
   customerAddress: string;
+  contractAddress: string;
   amount: number;
   tokenANS: string;
   transaction: {

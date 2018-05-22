@@ -3,4 +3,5 @@ export class UpdateOrderDto {
   readonly orderId: string;
   readonly from: string;
   readonly to: string;
+  readonly blockHash?: string;
 }
