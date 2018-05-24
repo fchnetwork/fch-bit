@@ -21,13 +21,11 @@ export class TransactionsController {
   }
 
   @Post('payment')
-  // @UseGuards(CallTransactionTokenGuard)
   async payment(@Body() paymentDto: PaymentDto) {
     return await this.transactionsService.payment(paymentDto);
   }
 
   @Post('token-payment')
-  // @UseGuards(CallTransactionTokenGuard)
   async tokenPayment(@Body() paymentDto: PaymentDto) {
     return await this.transactionsService.tokenPayment(paymentDto);
   }

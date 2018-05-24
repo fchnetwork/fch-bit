@@ -13,11 +13,11 @@ import { CorsMiddleware } from './cors.middleware';
     AccountModule,
   ],
 })
-
+// export class ApplicationModule{}
 export class ApplicationModule implements NestModule {
   configure(consumer: MiddlewaresConsumer): void {
       consumer.apply(CorsMiddleware).forRoutes(
-          { path: '*', method: RequestMethod.GET }
+          { path: '***' },
       );
   }
 }
