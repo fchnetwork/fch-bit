@@ -1,0 +1,20 @@
+<mat-grid-list cols="1">
+    <mat-grid-tile>
+      <mat-card *ngIf="success">
+        <mat-card-content>
+          <h1>Transaction success</h1>
+        </mat-card-content>
+        <mat-card-actions>
+          <button mat-raised-button color="primary">Redirect to shop</button>
+        </mat-card-actions>
+      </mat-card>
+      <mat-card *ngIf="!success && !loading">
+        <mat-card-content>
+          <h1>{{error}}</h1>
+        </mat-card-content>
+        <mat-card-actions>
+          <button mat-raised-button color="primary" (click)="update()">Try again</button>
+        </mat-card-actions>
+      </mat-card>
+    </mat-grid-tile>
+  </mat-grid-list>

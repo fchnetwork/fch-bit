@@ -1,0 +1,23 @@
+
+<mat-grid-list cols="1">
+  <mat-grid-tile>
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title>{{paymentType}} payment</mat-card-title>
+        <mat-card-subtitle>Check data below</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <mat-list>
+          <mat-list-item>Item name: {{itemName}}</mat-list-item>
+          <mat-divider></mat-divider>
+          <mat-list-item>Item id: {{itemId}}</mat-list-item>
+          <mat-divider></mat-divider>
+          <mat-list-item>Aero value: {{value}}</mat-list-item>
+        </mat-list>
+      </mat-card-content>
+      <mat-card-actions>
+        <button mat-raised-button disabled="{{disabled}}" color="primary" (click)="pay()">PAY</button>
+      </mat-card-actions>
+    </mat-card>
+  </mat-grid-tile>
+</mat-grid-list>
