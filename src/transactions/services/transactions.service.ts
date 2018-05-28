@@ -116,7 +116,7 @@ export class TransactionsService {
     });
   }
 
-  payment(data) {
+  async payment(data) {
     return new Promise((resolve, reject) => {
       data.type = 'aero payment';
       this.ordersService.create(data).then((orderRes) => {
@@ -125,7 +125,7 @@ export class TransactionsService {
     });
   }
 
-  tokenPayment(data) {
+  async tokenPayment(data) {
     return new Promise((resolve, reject) => {
       data.type = 'token payment';
       this.ordersService.create(data).then((orderRes) => {

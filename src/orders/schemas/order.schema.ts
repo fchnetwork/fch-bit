@@ -10,6 +10,7 @@ export const OrderSchema = new mongoose.Schema({
   amount: Number,
   tokenANS: String,
   contractAddress: String,
+  merchantAddress: String,
   transaction: {
     id: String,
     status: String,
