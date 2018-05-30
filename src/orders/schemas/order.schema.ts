@@ -11,6 +11,7 @@ export const OrderSchema = new mongoose.Schema({
   tokenANS: String,
   contractAddress: String,
   merchantAddress: String,
+  merchantAlias: String,
   transaction: {
     id: String,
     status: String,
