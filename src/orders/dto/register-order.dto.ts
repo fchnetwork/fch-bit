@@ -8,6 +8,7 @@ export class RegisterOrderDto {
   tokenANS?: string;
   contractAddress?: string;
   merchantAddress: string;
+  merchantAlias: string;
   transaction: {
     id: string;
     status: string;

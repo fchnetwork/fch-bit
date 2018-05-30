@@ -26,6 +26,7 @@ export class OrdersService {
 
   async create(data): Promise<Order> {
     const sender = await this.accountService.getAddresses();
+    const aliasses = process.env.accountAliasses.split(',');
     const registerOrderData: RegisterOrderDto = {
       type: data.type,
       assetId: data.assetId,
@@ -36,6 +37,7 @@ export class OrdersService {
       tokenANS: data.tokenANS || '',
       contractAddress: data.contractAddress || 'aero payment',
       merchantAddress: sender[data.accountKey],
+      merchantAlias: aliasses[data.accountKey],
       transaction: {
         id: '',
         status: 'Pending',

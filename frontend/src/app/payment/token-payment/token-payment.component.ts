@@ -15,7 +15,7 @@ export class TokenPaymentComponent implements OnInit, OnDestroy {
   itemId = '2';
   value = '3';
   accountKey = '1';
-  tokenContractAddress = '0x8dc2df9d07dabb444ed78de93542cd5d6355b403';
+  contractAddress = '0x8dc2df9d07dabb444ed78de93542cd5d6355b403';
 
   constructor(
     private route: ActivatedRoute,
@@ -31,19 +31,30 @@ export class TokenPaymentComponent implements OnInit, OnDestroy {
         this.itemId = parsed.itemId || '';
         this.value = parsed.value || '';
         this.accountKey = parsed.accountKey || '';
-
+        this.contractAddress = parsed.tokenContractAddress || '';
         this.buttonDisabled = false;
       }
     });
   }
 
-  redirect() {
-    // window.location.href = `http://dev.aerum.net?hash=${this.hash}`;
+  redirect(res) {
+    const query = {
+      orderId: res._id,
+      to: res.merchantAlias,
+      assetAddress: 0,
+      amount: res.amount,
+      contractAddress: res.contractAddress,
+      returnUrl: 'http://localhost:4300/success',
+      returnUrlFailed: 'http://localhost:4300/failed'
+
+    };
+    window.location.href = `http://dev.aerum.net/external/transaction?query=${JSON.stringify(query)}`;
   }
 
   pay() {
-    this.paymentsService.createPayment(this.value, this.itemId, this.accountKey, null).subscribe((res) => {
+    this.paymentsService.createPayment(this.value, this.itemId, this.accountKey, this.contractAddress).subscribe((res) => {
       console.log(res);
+      this.redirect(res);
     });
   }
 

@@ -38,14 +38,14 @@ export class EthPaymentComponent implements OnInit, OnDestroy {
   redirect(res) {
     const query = {
       orderId: res._id,
-      to: res.merchantAddress,
+      to: res.merchantAlias,
       assetAddress: 0,
       amount: res.amount,
       returnUrl: 'http://localhost:4300/success',
       returnUrlFailed: 'http://localhost:4300/failed'
 
     };
-    window.location.href = `http://localhost:4200/wallet/transaction?query=${JSON.stringify(query)}`;
+    window.location.href = `http://dev.aerum.net/external/transaction?query=${JSON.stringify(query)}`;
   }
 
   pay() {
