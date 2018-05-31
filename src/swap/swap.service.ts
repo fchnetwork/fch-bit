@@ -7,12 +7,14 @@ import { Swap } from './interfaces/swap.interface';
 import { RegisterSwapDto } from './dto/register-swap.dto';
 import * as Moment from 'moment';
 import { AccountService } from '../account/services/account.service';
+import { AtomicSwapEther } from './../abi/AtomicSwapEther';
+import { AtomicSwapERC20 } from './../abi/AtomicSwapERC20';
 const Web3 = require('web3');
 
 @Component()
 export class SwapService {
   web3: any;
-
+  rinkebyWeb3: any;
   constructor(
     @Inject('SwapModelToken') private readonly swapModel: Model<Swap>,
     private accountService: AccountService,
@@ -58,4 +60,14 @@ export class SwapService {
     });
 
   }
+
+  swapEventListener() {
+    this.rinkebyWeb3 = new Web3( new Web3.providers.WebsocketProvider(process.env.rinkebyProvider));
+    const atomicSwapERC20Contract = new this.rinkebyWeb3.eth.Contract(AtomicSwapERC20, process.env.AtomicSwapERC20);
+    const atomicSwapEtherAddress = new this.rinkebyWeb3.eth.Contract(AtomicSwapEther, process.env.AtomicSwapEtherAddress);
+
+    // console.log(this.rinkebyWeb3);
+    console.log('swap event listening');
+  }
+
 }
