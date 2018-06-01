@@ -34,7 +34,7 @@ export class SwapService {
       ethTrader: data.ethTrader,
       withdrawTrader: data.withdrawTrader,
       secretKey: data.secretKey,
-      status: 'open',
+      status: 'pending',
     };
     const registeredSwap = new this.swapModel(registerSwapData);
     return await registeredSwap.save();
@@ -48,12 +48,12 @@ export class SwapService {
     return await this.swapModel.findOne({swapId: id}).exec();
   }
 
-  async update(body): Promise<any> {
+  async update(swapId, secretKey, status): Promise<any> {
     // body.swapId, body.timelock, body.value, body.ethTrader, body.withdrawTrader, body.seckretKey
     return new Promise((resolve, reject) => {
-      const updatedTransaction = this.swapModel.findOneAndUpdate({swapId: body.swapId}, {secretKey: body.secretKey, status: body.status})
+      const updatedTransaction = this.swapModel.findOneAndUpdate({swapId: swapId}, {secretKey: secretKey, status: status})
         .then((res) => {
-          this.swapModel.findOne({swapId: body.swapId}).then((itemRes) => {
+          this.swapModel.findOne({swapId: swapId}).then((itemRes) => {
             resolve(itemRes);
           });
         });
@@ -65,9 +65,69 @@ export class SwapService {
     this.rinkebyWeb3 = new Web3( new Web3.providers.WebsocketProvider(process.env.rinkebyProvider));
     const atomicSwapERC20Contract = new this.rinkebyWeb3.eth.Contract(AtomicSwapERC20, process.env.AtomicSwapERC20);
     const atomicSwapEtherAddress = new this.rinkebyWeb3.eth.Contract(AtomicSwapEther, process.env.AtomicSwapEtherAddress);
+    atomicSwapEtherAddress.events.allEvents({}, { fromBlock: 0, toBlock: 'latest' }, (error, res) => {
+      if (error) {
+        console.log(error);
+      } else {
+        console.log(res);
+      }
+    });
+    atomicSwapERC20Contract.events.allEvents({}, { fromBlock: 0, toBlock: 'latest' }, (error, res) => {
+      if (error) {
+        console.log(error);
+      } else {
+        console.log(res);
+      }
+    });
+    this.listenOpen(atomicSwapEtherAddress, atomicSwapERC20Contract);
+    this.listenExpire(atomicSwapEtherAddress);
+    this.listenClose(atomicSwapERC20Contract);
 
-    // console.log(this.rinkebyWeb3);
     console.log('swap event listening');
   }
+
+  listenOpen(atomicSwapEtherAddress, atomicSwapERC20Contract){
+    atomicSwapEtherAddress.events.Open({}, { fromBlock: 0, toBlock: 'latest' }, (error, res) => {
+      if (error) {
+        console.log(error);
+      } else {
+        console.log(res);
+        const minValue = 2;
+        const maxValue = 10;
+        const presetTimelock = 10999;
+        const timelock = res.timelock;
+        const presetExchangeRate = 0.1;
+        const exchangeRate = 0.2;
+        const value = res.value;
+        const withdrawTrader = res.withdrawTrader;
+        const hash = res.hash;
+        if (value > minValue && value < maxValue && timelock === presetTimelock && exchangeRate >= presetExchangeRate) {
+          atomicSwapERC20Contract.open(hash, value, process.env.AtomicSwapERC20, withdrawTrader, timelock);
+          this.update(hash, null, 'open');
+        }
+      }
+    });
+  }
+
+  listenExpire(contract){
+    contract.events.Expire({}, { fromBlock: 0, toBlock: 'latest' }, (error, res) => {
+      if (error) {
+        console.log(error);
+      } else {
+        console.log(res);
+      }
+    });
+  }
+
+  listenClose(contract){
+    contract.events.Close({}, { fromBlock: 0, toBlock: 'latest' }, (error, res) => {
+      if (error) {
+        console.log(error);
+      } else {
+        console.log(res);
+      }
+    });
+  }
+
 
 }
