@@ -81,7 +81,7 @@ export class SwapService {
     });
     this.listenOpen(atomicSwapEtherAddress, atomicSwapERC20Contract);
     this.listenExpire(atomicSwapEtherAddress);
-    this.listenClose(atomicSwapERC20Contract);
+    this.listenClose(atomicSwapERC20Contract, atomicSwapEtherAddress);
 
     console.log('swap event listening');
   }
@@ -125,12 +125,22 @@ export class SwapService {
     });
   }
 
-  listenClose(contract){
+  listenClose(contract, atomicSwapEtherAddress){
     contract.events.Close({}, { fromBlock: 0, toBlock: 'latest' }, (error, res) => {
       if (error) {
         console.log(error);
       } else {
-        console.log(res);
+        const hash = res.hash;
+        const secretKey = res.secretKey;
+        this.swapModel.findOneAndUpdate({swapId: hash, status: 'open'}, {secretKey})
+        .then((respond) => {
+          this.swapModel.findOne({swapId: hash}).then((itemRes) => {
+            console.log(respond);
+            atomicSwapEtherAddress.close(hash, secretKey).then((methodRes) => {
+              this.swapModel.findOneAndUpdate({swapId: hash, status: 'open'}, {status: 'closed'});
+            });
+          });
+        });
       }
     });
   }
