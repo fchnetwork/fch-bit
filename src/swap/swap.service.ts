@@ -51,9 +51,9 @@ export class SwapService {
   async update(swapId, secretKey, status): Promise<any> {
     // body.swapId, body.timelock, body.value, body.ethTrader, body.withdrawTrader, body.seckretKey
     return new Promise((resolve, reject) => {
-      const updatedTransaction = this.swapModel.findOneAndUpdate({swapId: swapId}, {secretKey: secretKey, status: status})
+      const updatedTransaction = this.swapModel.findOneAndUpdate({swapId}, {secretKey, status})
         .then((res) => {
-          this.swapModel.findOne({swapId: swapId}).then((itemRes) => {
+          this.swapModel.findOne({swapId}).then((itemRes) => {
             resolve(itemRes);
           });
         });
@@ -114,7 +114,13 @@ export class SwapService {
       if (error) {
         console.log(error);
       } else {
-        console.log(res);
+        const hash = res.hash;
+        this.swapModel.findOneAndUpdate({swapId: hash, status: 'open'}, {status: 'expired'})
+        .then((respond) => {
+          this.swapModel.findOne({swapId: hash}).then((itemRes) => {
+            console.log(respond);
+          });
+        });
       }
     });
   }
