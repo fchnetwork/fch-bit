@@ -3,12 +3,12 @@ export const AtomicSwapEther = [
     "anonymous": false,
     "inputs": [
       {
-        "indexed": false,
+        "indexed": true,
         "name": "_hash",
         "type": "bytes32"
       },
       {
-        "indexed": false,
+        "indexed": true,
         "name": "_withdrawTrader",
         "type": "address"
       }
@@ -20,7 +20,7 @@ export const AtomicSwapEther = [
     "anonymous": false,
     "inputs": [
       {
-        "indexed": false,
+        "indexed": true,
         "name": "_hash",
         "type": "bytes32"
       }
@@ -32,7 +32,7 @@ export const AtomicSwapEther = [
     "anonymous": false,
     "inputs": [
       {
-        "indexed": false,
+        "indexed": true,
         "name": "_hash",
         "type": "bytes32"
       },

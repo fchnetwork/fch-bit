@@ -65,24 +65,28 @@ export class SwapService {
     this.rinkebyWeb3 = new Web3( new Web3.providers.WebsocketProvider(process.env.rinkebyProvider));
     const atomicSwapERC20Contract = new this.rinkebyWeb3.eth.Contract(AtomicSwapERC20, process.env.AtomicSwapERC20);
     const atomicSwapEtherAddress = new this.rinkebyWeb3.eth.Contract(AtomicSwapEther, process.env.AtomicSwapEtherAddress);
-    atomicSwapEtherAddress.events.allEvents({}, { fromBlock: 0, toBlock: 'latest' }, (error, res) => {
-      if (error) {
-        console.log(error);
-      } else {
-        console.log(res);
-      }
-    });
-    atomicSwapERC20Contract.events.allEvents({}, { fromBlock: 0, toBlock: 'latest' }, (error, res) => {
-      if (error) {
-        console.log(error);
-      } else {
-        console.log(res);
-      }
-    });
+    // atomicSwapEtherAddress.events.allEvents({}, { fromBlock: 0, toBlock: 'latest' }, (error, res) => {
+    //   if (error) {
+    //     console.log(error);
+    //   } else {
+    //     console.log(res);
+    //   }
+    // });
+    // atomicSwapERC20Contract.events.allEvents({}, { fromBlock: 0, toBlock: 'latest' }, (error, res) => {
+    //   if (error) {
+    //     console.log(error);
+    //   } else {
+    //     console.log(res);
+    //   }
+    // });
+    // console.log(atomicSwapEtherAddress);
     this.listenOpen(atomicSwapEtherAddress, atomicSwapERC20Contract);
-    this.listenExpire(atomicSwapEtherAddress);
+    // this.listenExpire(atomicSwapEtherAddress);
     this.listenClose(atomicSwapERC20Contract, atomicSwapEtherAddress);
-
+    
+    this.testOpen(atomicSwapEtherAddress);
+    // this.testExpire(atomicSwapEtherAddress);
+    // this.testClose(atomicSwapERC20Contract );
     console.log('swap event listening');
   }
 
@@ -91,20 +95,40 @@ export class SwapService {
       if (error) {
         console.log(error);
       } else {
-        console.log(res);
-        const minValue = 2;
-        const maxValue = 10;
-        const presetTimelock = 10999;
-        const timelock = res.timelock;
-        const presetExchangeRate = 0.1;
-        const exchangeRate = 0.2;
-        const value = res.value;
-        const withdrawTrader = res.withdrawTrader;
-        const hash = res.hash;
-        if (value > minValue && value < maxValue && timelock === presetTimelock && exchangeRate >= presetExchangeRate) {
-          atomicSwapERC20Contract.open(hash, value, process.env.AtomicSwapERC20, withdrawTrader, timelock);
-          this.update(hash, null, 'open');
-        }
+        console.log('opened in event');
+        // console.log(res);
+        const hash = res.returnValues._hash;
+        atomicSwapEtherAddress.methods.check(hash).call().then((checkRes) => {
+          console.log('checkRes');
+          // console.log(checkRes);
+          const minValue = 0;
+          const maxValue = 10;
+          const presetTimelock = 11;
+          const timelock = checkRes.timelock;
+          const presetExchangeRate = 0.1;
+          const exchangeRate = 0.2;
+          const value = checkRes.value;
+          const withdrawTrader = checkRes.withdrawTrader;
+          // console.log(Number(value));
+          // console.log(Number(minValue));
+          // console.log(Number(maxValue));
+          // console.log(String(timelock));
+          // console.log(String(presetTimelock));
+          if (Number(value) >= Number(minValue) && Number(value) <= Number(maxValue) && String(timelock) === String(presetTimelock) && Number(exchangeRate) >= Number(presetExchangeRate)) {
+            console.log('start open in erc20 res');
+            console.log(atomicSwapERC20Contract.methods);
+            // TODO: redeploy Radek token
+            const tokenContract = new this.web3.eth.Contract(tokensABI, '0x8dc2df9d07dabb444ed78de93542cd5d6355b403', {from: '0x131ae1a0c00c4d9f886fe0d1fc951ffb2c83cb1f', gas: 4000000});
+            tokenContract.approve(withdrawTrader, value).send({from: '0x131ae1a0c00c4d9f886fe0d1fc951ffb2c83cb1f', gas: 4000000}).then((approveRes)=>{
+              atomicSwapERC20Contract.methods.open(hash, value, 'token contract address', withdrawTrader, timelock).send({from: '0x131ae1a0c00c4d9f886fe0d1fc951ffb2c83cb1f', gas: 4000000}).then((erc2Res) => {
+                console.log('erc20Res');
+                console.log(erc2Res);
+                // this.update(hash, null, 'open');
+              });
+            });
+          }
+        })
+
       }
     });
   }
@@ -114,7 +138,7 @@ export class SwapService {
       if (error) {
         console.log(error);
       } else {
-        const hash = res.hash;
+        const hash = res.returnValues._hash;
         this.swapModel.findOneAndUpdate({swapId: hash, status: 'open'}, {status: 'expired'})
         .then((respond) => {
           this.swapModel.findOne({swapId: hash}).then((itemRes) => {
@@ -130,18 +154,47 @@ export class SwapService {
       if (error) {
         console.log(error);
       } else {
-        const hash = res.hash;
-        const secretKey = res.secretKey;
-        this.swapModel.findOneAndUpdate({swapId: hash, status: 'open'}, {secretKey})
-        .then((respond) => {
-          this.swapModel.findOne({swapId: hash}).then((itemRes) => {
-            console.log(respond);
-            atomicSwapEtherAddress.close(hash, secretKey).then((methodRes) => {
-              this.swapModel.findOneAndUpdate({swapId: hash, status: 'open'}, {status: 'closed'});
-            });
-          });
-        });
+        console.log(res);
+        // const hash = res.hash;
+        // const secretKey = res.secretKey;
+        // atomicSwapEtherAddress.close(hash, secretKey).then((methodRes) => {
+        //   console.log(methodRes);
+        //     // this.swapModel.findOneAndUpdate({swapId: hash, status: 'open'}, {status: 'closed'});
+        // });
+        // this.swapModel.findOneAndUpdate({swapId: hash, status: 'open'}, {secretKey})
+        // .then((respond) => {
+        //   this.swapModel.findOne({swapId: hash}).then((itemRes) => {
+        //     console.log(respond);
+        //     atomicSwapEtherAddress.close(hash, secretKey).then((methodRes) => {
+        //       this.swapModel.findOneAndUpdate({swapId: hash, status: 'open'}, {status: 'closed'});
+        //     });
+        //   });
+        // });
       }
+    });
+  }
+
+  async testOpen(contract){
+    const hash = '0x361c74f7dd1ed6a069e18375ab2bee9afcb1095613f53b07de11829ac66cdfc5';
+    const open = await contract.methods.open(hash, '0x131ae1a0c00c4d9f886fe0d1fc951ffb2c83cb1f', 11).send({from: '0x131ae1a0c00c4d9f886fe0d1fc951ffb2c83cb1f', gas: 4000000}).then((res) => {
+      // console.log(res);
+    }).catch((err) => {
+      console.log(err);
+    });
+  }
+
+  // async testExpire(contract){
+  //   const hash = '0x261c74f7dd1ed6a069e18375ab2bee9afcb1095613f53b07de11829ac66cdfc5';
+  //   const expire = await contract.methods.expire(hash).send({from: '0x131ae1a0c00c4d9f886fe0d1fc951ffb2c83cb1f', gas: 4000000}).catch((err) => {
+  //     console.log(err);
+  //   });
+  // }
+  async testClose(contract){
+    const hash = '0x161c74f7dd1ed6a069e18375ab2bee9afcb1095613f53b07de11829ac66cdfc5';
+    const key = '0x42a990655bffe188c9823a2f914641a32dcbb1b28e8586bd29af291db7dcd4e9';
+    console.log(contract.methods);
+    const close = await contract.methods.close(hash, key).send({from: '0x131ae1a0c00c4d9f886fe0d1fc951ffb2c83cb1f', gas: 4000000}).catch((err) => {
+      console.log(err);
     });
   }
 
