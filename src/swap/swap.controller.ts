@@ -15,10 +15,10 @@ export class SwapController {
     return await this.swapService.create(registerSwapDto);
   }
 
-  @Put()
-  async update(@Body() updateSwapDto: UpdateSwapDto): Promise<Swap> {
-    return await this.swapService.update(updateSwapDto);
-  }
+  // @Put()
+  // async update(@Body() updateSwapDto: UpdateSwapDto): Promise<Swap> {
+  //   return await this.swapService.update(updateSwapDto);
+  // }
 
   @Get()
   async findAll(): Promise<Swap[]> {
