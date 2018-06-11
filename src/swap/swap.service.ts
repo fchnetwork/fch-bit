@@ -83,6 +83,16 @@ export class SwapService {
     console.log('swap event listening');
   }
 
+  async accountExists(withdrawTrader) {
+    const accounts = await this.web3.eth.getAccounts();
+    for (const i of accounts) {
+      if (i === withdrawTrader) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   listenOpen(atomicSwapEtherAddress, atomicSwapERC20Contract){
 
     atomicSwapEtherAddress.events.Open({}, { fromBlock: 0, toBlock: 'latest' }, (error, res) => {
@@ -100,7 +110,7 @@ export class SwapService {
           const value = 0.1;
           const withdrawTrader = checkRes.withdrawTrader;
 
-          if (Number(value) >= Number(minValue) && Number(value) <= Number(maxValue) && String(timelock) === String(presetTimelock) && Number(exchangeRate) >= Number(presetExchangeRate)) {
+          if (this.accountExists(withdrawTrader) && Number(value) >= Number(minValue) && Number(value) <= Number(maxValue) && String(timelock) === String(presetTimelock) && Number(exchangeRate) >= Number(presetExchangeRate)) {
             const tokenContract = new this.web3.eth.Contract(tokensABI, this.tokenAddress, {from: checkRes.withdrawTrader, gas: 4000000});
             tokenContract.methods.approve(withdrawTrader, value).send({from: checkRes.withdrawTrader, gas: 4000000}).then((approveRes) => {
               atomicSwapERC20Contract.methods.open(hash, value, this.tokenAddress, withdrawTrader, timelock).send({from: checkRes.withdrawTrader, gas: 4000000}).then((erc2Res) => {
