@@ -41,7 +41,7 @@ export class TokenPaymentComponent implements OnInit, OnDestroy {
     const query = {
       orderId: res._id,
       to: res.merchantAlias,
-      assetAddress: 0,
+      assetAddress: 1,
       amount: res.amount,
       contractAddress: res.contractAddress,
       returnUrl: 'http://localhost:4300/success',
