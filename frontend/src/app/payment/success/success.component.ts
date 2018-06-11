@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { PaymentsService } from '../services/payments.service';
-
+import { environment } from '../../../environments/environment'
 @Component({
   selector: 'custom-success',
   templateUrl: './success.component.html',
@@ -40,7 +40,7 @@ export class SuccessComponent implements OnInit, OnDestroy {
     const query = {
       'orderId': `${this.orderId}`
     };
-    window.location.href = `http://dev.aerum.net?query=${query}`;
+    window.location.href = `${environment.walletURL}?query=${query}`;
   }
 
   update() {

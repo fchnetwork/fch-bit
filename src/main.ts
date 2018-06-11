@@ -11,8 +11,13 @@ async function bootstrap() {
     const swapService = app.select(SwapModule).get(SwapService);
     swapService.swapEventListener();
   }
-
-  await app.listen(3001);
+  if(process.env.Production == true) {
+    console.log("true ", process.env.Production)
+    await app.listen(3001,"0.0.0.0");
+  } else {
+    console.log("false ", process.env.Production)
+    await app.listen(3001);
+  }
   console.log('App works on port 3001');
 }
 bootstrap();

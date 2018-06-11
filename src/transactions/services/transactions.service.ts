@@ -20,7 +20,7 @@ export class TransactionsService {
   }
 
   initWeb3 = () => {
-    return new Web3( new Web3.providers.WebsocketProvider(process.env.httpProvider));
+    return new Web3( new Web3.providers.WebsocketProvider(process.env.aerumProvider));
   }
 
   updateTransaction(orderId, txHash, from, to) {

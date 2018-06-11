@@ -4,7 +4,7 @@ import { SwapModule } from './swap/swap.module';
 import { TransactionsModule } from './transactions/transactions.module';
 import { AccountModule } from './account/account.module';
 import { CorsMiddleware } from './cors.middleware';
-
+require('dotenv').config({path: '../.env'})
 @Module({
   imports: [
     OrdersModule,

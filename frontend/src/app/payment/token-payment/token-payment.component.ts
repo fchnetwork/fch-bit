@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { PaymentsService } from '../services/payments.service';
+import { environment } from '../../../environments/environment'
 
 @Component({
   selector: 'custom-token-payment',
@@ -44,11 +45,10 @@ export class TokenPaymentComponent implements OnInit, OnDestroy {
       assetAddress: 0,
       amount: res.amount,
       contractAddress: res.contractAddress,
-      returnUrl: 'http://localhost:4300/success',
-      returnUrlFailed: 'http://localhost:4300/failed'
-
+      returnUrl: environment.returnUrl,
+      returnUrlFailed: environment.returnUrlFailed
     };
-    window.location.href = `http://dev.aerum.net/external/transaction?query=${JSON.stringify(query)}`;
+    window.location.href = `${environment.walletURL}/external/transaction?query=${JSON.stringify(query)}`;
   }
 
   pay() {

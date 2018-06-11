@@ -4,6 +4,6 @@ export const databaseProviders = [
   {
     provide: 'DbConnectionToken',
     useFactory: async (): Promise<mongoose.Connection> =>
-      await mongoose.connect('mongodb://localhost/aerummiddleware'),
+    await mongoose.connect(process.env.MongoConn),
   },
 ];

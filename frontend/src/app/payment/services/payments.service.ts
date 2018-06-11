@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-
+import { environment } from '../../../environments/environment'
 
 const httpOptions = {
   headers: new HttpHeaders().set('Content-Type', 'application/json').append('Access-Control-Allow-Origin', '*')
@@ -10,8 +10,8 @@ const httpOptions = {
 @Injectable({
   providedIn: 'root'
 })
-export class PaymentsService {
-  middlewareUrl = 'http://localhost:3001';
+export class PaymentsService { 
+  middlewareUrl = environment.middlewareURL;
 
   constructor(
     public http: HttpClient

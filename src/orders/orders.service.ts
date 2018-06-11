@@ -21,7 +21,7 @@ export class OrdersService {
   }
 
   initWeb3 = () => {
-    return new Web3( new Web3.providers.WebsocketProvider(process.env.httpProvider));
+    return new Web3( new Web3.providers.WebsocketProvider(process.env.aerumProvider));
   }
 
   async create(data): Promise<Order> {
