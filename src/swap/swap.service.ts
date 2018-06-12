@@ -124,6 +124,7 @@ export class SwapService {
         console.log(error);
       } else {
         const hash = res.returnValues._hash;
+        // this.swapModel.findOneAndUpdate({swapId: hash}, {$set: {status: 'open'}}, {new: true}).exec();
         this.swapModel.findOne({swapId: hash}).then((swapExists) => {
           if (!swapExists) {
             console.log(res);
@@ -137,6 +138,7 @@ export class SwapService {
               const exchangeRate = 0.2;
               const value = checkRes.value;
               const withdrawTrader = checkRes.withdrawTrader;
+
               this.create(hash, timelock, value, aerumAccounts[1], withdrawTrader, null);
               if (this.accountExists(withdrawTrader) && Number(value) >= Number(minValue) && Number(value) <= Number(maxValue) && Number(timelock) > Number(presetTimelock) && Number(exchangeRate) >= Number(presetExchangeRate)) {
                 const tokenContract = new this.web3.eth.Contract(tokensABI, this.tokenAddress, {from: aerumAccounts[1], gas: 4000000});
@@ -144,9 +146,12 @@ export class SwapService {
                   console.log('approve works', approveRes);
                   atomicSwapERC20Contract.methods.open(hash, value, this.tokenAddress, aerumAccounts[1], timelock).send({from: aerumAccounts[1], gas: 4000000}).then((erc2Res) => {
                     console.log('erc20 open', erc2Res);
-                    this.swapModel.findOneAndUpdate({swapId: hash}, {$set: {status: 'open'}});
+                    // this.swapModel.findOneAndUpdate({swapId: hash}, {$set: {status: 'open'}}).then((updateOpenRes)=>{
+                    //   console.log('updateOpenRes', updateOpenRes);
+                    // });
                     // Start testing here (don't delete)
                     // this.testClose(atomicSwapERC20Contract);
+                    this.swapModel.findOneAndUpdate({swapId: hash}, {$set: {status: 'open'}}, {new: true}).exec();
                   }).catch((erc2err)=>{
                     console.log('erc2err', erc2err);
                   });
@@ -170,15 +175,14 @@ export class SwapService {
         console.log('expired error', error);
       } else {
         const hash = res.returnValues._hash;
+        // this.swapModel.findOneAndUpdate({swapId: hash}, {$set: {status: 'expired'}}, {new: true}).exec();
         this.swapModel.findOne({swapId: hash}).then((swapExists) => {
+          // console.log(swapExists);
           if (swapExists.status !== 'expired' && swapExists.status !== 'invalid') {
             console.log('expired res', res);
-            atomicSwapERC20Contract.Expire().send({from: aerumAccounts[1], gas: 4000000}).then((expireRes) => {
+            atomicSwapERC20Contract.methods.expire(hash).send({from: aerumAccounts[1], gas: 4000000}).then((expireRes) => {
               console.log('erc20expire res', expireRes);
-              this.swapModel.findOneAndUpdate({swapId: hash, status: 'open'}, {$set: {status: 'expired'}})
-                .then((respond) => {
-                  this.swapModel.findOne({swapId: hash});
-                });
+              this.swapModel.findOneAndUpdate({swapId: hash}, {$set: {status: 'expired'}}, {new: true}).exec();
             }).catch((expireErr) => {
               console.log('expireRess', expireErr);
             });
@@ -199,19 +203,19 @@ export class SwapService {
         // atomicSwapEtherAddress.methods.close(hash, secretKey).send({from: itemRes.withdrawTrader, gas: 4000000}).then((methodRes) => {
         //   // this.swapModel.findOneAndUpdate({swapId: hash, status: 'open'}, {status: 'closed'});
         // });
-        this.swapModel.findOneAndUpdate({swapId: hash, status: 'open'}, {$set: {secretKey}})
-        .then((respond) => {
-          console.log('db res', respond);
-          this.swapModel.findOne({swapId: hash}).then((itemRes) => {
-            console.log('found item res', itemRes);
-            atomicSwapEtherAddress.methods.close(hash, secretKey).send({from: itemRes.withdrawTrader, gas: 4000000}).then((methodRes) => {
-              console.log('final close', methodRes);
-              this.swapModel.findOneAndUpdate({swapId: hash, status: 'open'}, {$set: {status: 'closed'}});
-            }).catch((finalCloseErr) => {
-              console.log(finalCloseErr);
-            });
+        this.swapModel.findOneAndUpdate({swapId: hash, status: 'open'}, {$set: {secretKey}}).exec();
+        // .then((respond) => {
+        this.swapModel.findOne({swapId: hash}).then((itemRes) => {
+          console.log('found item res', itemRes);
+          atomicSwapEtherAddress.methods.close(hash, secretKey).send({from: itemRes.withdrawTrader, gas: 4000000}).then((methodRes) => {
+            console.log('final close', methodRes);
+            // this.swapModel.findOneAndUpdate({swapId: hash, status: 'open'}, {$set: {status: 'closed'}});
+            this.swapModel.findOneAndUpdate({swapId: hash}, {$set: {status: 'closed'}}, {new: true}).exec();
+          }).catch((finalCloseErr) => {
+            console.log(finalCloseErr);
           });
         });
+        // });
       }
     });
   }
