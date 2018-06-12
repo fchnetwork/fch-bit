@@ -195,39 +195,25 @@ export class SwapService {
   }
 
   // Testing functions
-  async testOpen(contract){
-    const open = await contract.methods.open(this.hash, '0x070ad9b63522f50b10fa8b42e4da6ba7b10c756f', 1622883484).send({from: '0x070ad9b63522f50b10fa8b42e4da6ba7b10c756f', gas: 4000000}).then((res) => {
-      console.log(open);
-    }).catch((err) => {
-      console.log(err);
-    });
-  }
+  // async testOpen(contract){
+  //   const open = await contract.methods.open(this.hash, '0x070ad9b63522f50b10fa8b42e4da6ba7b10c756f', 1622883484).send({from: '0x070ad9b63522f50b10fa8b42e4da6ba7b10c756f', gas: 4000000}).then((res) => {
+  //     console.log(open);
+  //   }).catch((err) => {
+  //     console.log(err);
+  //   });
+  // }
 
-  async testExpire(contract){
-    const hash = '0x261c74f7dd1ed6a069e18375ab2bee9afcb1095613f53b07de11829ac66cdfc5';
-    const expire = await contract.methods.expire(hash).send({from: '0x070ad9b63522f50b10fa8b42e4da6ba7b10c756f', gas: 4000000}).catch((err) => {
-      console.log(err);
-    });
-  }
-  async testClose(contract){
-    const close = await contract.methods.close(this.hash, this.key).send({from: '0x070ad9b63522f50b10fa8b42e4da6ba7b10c756f', gas: 4000000, gasPrice: 4000000000}).then((res) => {
-    }).catch((err) => {
-      console.log(err);
-    });
-  }
-
-  // async testDb(){
-  //   this.swapModel.findOneAndUpdate({swapId: hash, status: 'open'}, {secretKey})
-  //       .then((respond) => {
-  //         console.log('closed res', respond);
-  //         this.swapModel.findOne({swapId: hash}).then((itemRes) => {
-  //           // atomicSwapEtherAddress.methods.close(hash, secretKey).send({from: itemRes.withdrawTrader, gas: 4000000}).then((methodRes) => {
-  //             this.swapModel.findOneAndUpdate({swapId: hash, status: 'open'}, {status: 'closed'}).then((finallyRes)=>{
-  //               console.log(finallyRes;)
-  //             });
-  //           // });
-  //         });
-  //       });
+  // async testExpire(contract){
+  //   const hash = '0x261c74f7dd1ed6a069e18375ab2bee9afcb1095613f53b07de11829ac66cdfc5';
+  //   const expire = await contract.methods.expire(hash).send({from: '0x070ad9b63522f50b10fa8b42e4da6ba7b10c756f', gas: 4000000}).catch((err) => {
+  //     console.log(err);
+  //   });
+  // }
+  // async testClose(contract){
+  //   const close = await contract.methods.close(this.hash, this.key).send({from: '0x070ad9b63522f50b10fa8b42e4da6ba7b10c756f', gas: 4000000, gasPrice: 4000000000}).then((res) => {
+  //   }).catch((err) => {
+  //     console.log(err);
+  //   });
   // }
 
 }
