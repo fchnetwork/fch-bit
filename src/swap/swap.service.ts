@@ -20,7 +20,7 @@ export class SwapService {
   prefix: any;
   tokenAddress: any;
   minutes: number;
-  
+
   constructor(
     @Inject('SwapModelToken') private readonly swapModel: Model<Swap>,
     private accountService: AccountService,
@@ -99,65 +99,71 @@ export class SwapService {
 
   async listenOpen(atomicSwapEtherAddress, atomicSwapERC20Contract){
     const aerumAccounts = await this.web3.eth.getAccounts();
-
-    atomicSwapEtherAddress.events.Open({}, { fromBlock: 0, toBlock: 'latest' }, (error, res) => {
+    const currentBlock = await this.rinkebyWeb3.eth.getBlockNumber();
+    console.log(">>>> open Current Block Rinkeby "+ currentBlock)
+    atomicSwapEtherAddress.events.Open({}, { fromBlock:currentBlock-1, toBlock: 'latest' }, (error, res) => {
+      console.log(">>>> open block num "+ res.blockNumber)
       if (error) {
         console.log(error);
-      } else {
+      } else if ( res.blockNumber >= currentBlock ) {
+        console.log("==== Entered open event processor at block: "+res.blockNumber+" =====");
         const hash = res.returnValues._hash;
         this.swapModel.findOne({swapId: hash}).then((swapExists) => {
           if (!swapExists) {
-            console.log(res);
+            console.log(">>>>> Not found record in DB for swap\n"+res);
             atomicSwapEtherAddress.methods.check(hash).call().then((checkRes) => {
-              console.log('checkRes', checkRes);
-              const minValue = 0;
-              const maxValue = 100000000000000000000000000;
+              console.log('============= SwapERC20.check() =========\n', checkRes);
+              const minValue = process.env.minValueSwap;
+              const maxValue = process.env.maxValueSwap;
               const timeLockNow = Moment(new Date());
               const presetTimelock = timeLockNow.add(this.minutes, 'm').unix();
               const timelock = checkRes.timelock;
-              const presetExchangeRate = 0.1;
-              const exchangeRate = 0.2;
+              const presetExchangeRate = process.env.presetExchangeRateSwap;
+              const exchangeRate = process.env.exchangeRateSwap;
               const value = checkRes.value;
               const withdrawTrader = checkRes.withdrawTrader;
 
-              this.create(hash, timelock, value, aerumAccounts[1], withdrawTrader, null);
+              this.create(hash, timelock, value, aerumAccounts[process.env.privateAerNodeAddressIndex], withdrawTrader, null);
               if (this.accountExists(withdrawTrader) && Number(value) >= Number(minValue) && Number(value) <= Number(maxValue) && Number(timelock) > Number(presetTimelock) && Number(exchangeRate) >= Number(presetExchangeRate)) {
-                const tokenContract = new this.web3.eth.Contract(tokensABI, this.tokenAddress, {from: aerumAccounts[1], gas: 4000000});
-                tokenContract.methods.approve(process.env.AtomicSwapERC20, value).send({from: aerumAccounts[1], gas: 4000000}).then((approveRes) => {
-                  console.log('approve works', approveRes);
-                  atomicSwapERC20Contract.methods.open(hash, value, this.tokenAddress, aerumAccounts[1], timelock).send({from: aerumAccounts[1], gas: 4000000}).then((erc2Res) => {
-                    console.log('erc20 open', erc2Res);
+                const tokenContract = new this.web3.eth.Contract(tokensABI, this.tokenAddress, {from: aerumAccounts[process.env.privateAerNodeAddressIndex], gas: 4000000});
+                tokenContract.methods.approve(process.env.AtomicSwapERC20, value).send({from: aerumAccounts[process.env.privateAerNodeAddressIndex], gas: 4000000}).then((approveRes) => {
+                  console.log('>>> Token approve call:\n', approveRes);
+                  atomicSwapERC20Contract.methods.open(hash, value, this.tokenAddress, aerumAccounts[process.env.privateAerNodeAddressIndex], timelock).send({from: aerumAccounts[process.env.privateAerNodeAddressIndex], gas: 4000000}).then((erc2Res) => {
+                    console.log('>>> SwapErc20 open call:\n', erc2Res);
 
                     // Start testing here (don't delete)
                     // this.testClose(atomicSwapERC20Contract);
-                    this.swapModel.findOneAndUpdate({swapId: hash}, {$set: {status: 'open'}}, {new: true}).exec();
+                   this.swapModel.findOneAndUpdate({swapId: hash}, {$set: {status: 'open'}}, {new: true}).exec();
                   }).catch((erc2err)=>{
-                    console.log('erc2err', erc2err);
+                    console.log('>>>>> Swap DB record update error -- erc2err\n', erc2err);
                   });
                 }).catch((approveErr)=>{
-                  console.log('approveErr', approveErr);
+                  console.log('>>>> Token approve method error -- approveErr\n', approveErr);
                 });
               }
             });
           }
         });
 
+      } else {
+        console.log(">>>>received old Open Event for block:"+res.blockNumber)
       }
     });
   }
 
   async listenExpire(atomicSwapEtherAddress, atomicSwapERC20Contract){
     const aerumAccounts = await this.web3.eth.getAccounts();
-
-    atomicSwapEtherAddress.events.Expire({}, { fromBlock: 452301, toBlock: 'latest' }, (error, res) => {
+    const currentBlock = await this.rinkebyWeb3.eth.getBlockNumber();
+    console.log("Expire Current Block Rinkeby "+ currentBlock)
+    atomicSwapEtherAddress.events.Expire({}, { fromBlock: currentBlock-1, toBlock: 'latest' }, (error, res) => {
       if (error) {
         console.log('expired error', error);
-      } else {
+      } else if ( res.blockNumber > currentBlock ) {
         const hash = res.returnValues._hash;
         this.swapModel.findOne({swapId: hash}).then((swapExists) => {
           if (swapExists.status !== 'expired' && swapExists.status !== 'invalid') {
             console.log('expired res', res);
-            atomicSwapERC20Contract.methods.expire(hash).send({from: aerumAccounts[1], gas: 4000000}).then((expireRes) => {
+            atomicSwapERC20Contract.methods.expire(hash).send({from: aerumAccounts[process.env.privateAerNodeAddressIndex], gas: 4000000}).then((expireRes) => {
               console.log('erc20expire res', expireRes);
               this.swapModel.findOneAndUpdate({swapId: hash}, {$set: {status: 'expired'}}, {new: true}).exec();
             }).catch((expireErr) => {
@@ -165,16 +171,20 @@ export class SwapService {
             });
           }
         })
+      } else {
+        console.log("received old Expire Event")
       }
     });
   }
 
-  listenClose(contract, atomicSwapEtherAddress){
-    contract.events.Close({}, { fromBlock: 452301, toBlock: 'latest' }, (error, res) => {
+  async listenClose(contract, atomicSwapEtherAddress){
+    const currentBlock = await this.web3.eth.getBlockNumber();
+    console.log("close Current Block aerum "+ currentBlock)
+    contract.events.Close({}, { fromBlock: currentBlock-1, toBlock: 'latest' }, (error, res) => {
       if (error) {
         console.log('closeErr', error);
-      } else {
-        console.log('closeEventRed', res);
+      } else if ( res.blockNumber > currentBlock ) {
+
         const hash = res.returnValues._hash;
         const secretKey = res.returnValues._secretKey;
 
@@ -190,6 +200,8 @@ export class SwapService {
           });
         });
         // });
+      } else {
+        console.log("received old Close Event")
       }
     });
   }
