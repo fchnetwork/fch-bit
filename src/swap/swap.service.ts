@@ -21,10 +21,7 @@ export class SwapService {
   tokenAddress: any;
   minutes: number;
 
-  constructor(
-    @Inject('SwapModelToken') private readonly swapModel: Model<Swap>,
-    private accountService: AccountService,
-  ) {
+  constructor( @Inject('SwapModelToken') private readonly swapModel: Model<Swap>, private accountService: AccountService ) {
     this.web3 = this.initWeb3();
     // Key and hashes are hardcoded now for tests (key should be changed everytime when reload app)
     this.key = '0x59a995655bffe188c9823a2f914641a32dcbb1b28e8586bd29af291db7dcd4e8';
@@ -38,7 +35,7 @@ export class SwapService {
     return new Web3( new Web3.providers.WebsocketProvider(process.env.aerumProvider));
   }
 
-  async create(swapId, timelock, value, ethTrader, withdrawTrader, secretKey): Promise<Swap> {
+  async create(swapId?, timelock?, value?, ethTrader?, withdrawTrader?, secretKey?): Promise<Swap> {
     const registerSwapData: RegisterSwapDto = {
       swapId,
       timelock,
@@ -69,18 +66,15 @@ export class SwapService {
           });
         });
     });
-
   }
 
   swapEventListener() {
     this.rinkebyWeb3 = new Web3( new Web3.providers.WebsocketProvider(process.env.rinkebyProvider));
     const atomicSwapERC20Contract = new this.web3.eth.Contract(AtomicSwapERC20, process.env.AtomicSwapERC20);
     const atomicSwapEtherAddress = new this.rinkebyWeb3.eth.Contract(AtomicSwapEther, process.env.AtomicSwapEtherAddress);
-
     this.listenOpen(atomicSwapEtherAddress, atomicSwapERC20Contract);
     this.listenExpire(atomicSwapEtherAddress, atomicSwapERC20Contract);
     this.listenClose(atomicSwapERC20Contract, atomicSwapEtherAddress);
-
     // this.testOpen(atomicSwapEtherAddress);
     // this.testExpire(atomicSwapEtherAddress);
     // this.testClose(atomicSwapERC20Contract );
@@ -109,28 +103,44 @@ export class SwapService {
         console.log("==== Entered open event processor at block: "+res.blockNumber+" =====");
         const hash = res.returnValues._hash;
         this.swapModel.findOne({swapId: hash}).then((swapExists) => {
-          if (!swapExists) {
+
+        // TODO:  event open on AtomicSwapEther contract has topic with hash and withdraw trader - need to check if we own address withdrawtrader before doing other checks below
+        //  if (this.accountExists(res.returnValues.withdrawTrader~
+
+        if (!swapExists) {
             console.log(">>>>> Not found record in DB for swap\n"+res);
             atomicSwapEtherAddress.methods.check(hash).call().then((checkRes) => {
               console.log('============= SwapERC20.check() =========\n', checkRes);
+
               const minValue = process.env.minValueSwap;
               const maxValue = process.env.maxValueSwap;
               const timeLockNow = Moment(new Date());
               const presetTimelock = timeLockNow.add(this.minutes, 'm').unix();
               const timelock = checkRes.timelock;
               const presetExchangeRate = process.env.presetExchangeRateSwap;
+              const tokenDigits = process.env.presetTokenDigits;
               const exchangeRate = process.env.exchangeRateSwap;
-              const value = checkRes.value;
-              const withdrawTrader = checkRes.withdrawTrader;
+              let value = checkRes.value;
+              const etherDigits = 18; // for Ether to Token conversion
+              const withdrawTrader = checkRes.withdrawTrader; // it should be one of our Ethereum addresses to respond to that event
 
               this.create(hash, timelock, value, aerumAccounts[process.env.privateAerNodeAddressIndex], withdrawTrader, null);
               if (this.accountExists(withdrawTrader) && Number(value) >= Number(minValue) && Number(value) <= Number(maxValue) && Number(timelock) > Number(presetTimelock) && Number(exchangeRate) >= Number(presetExchangeRate)) {
                 const tokenContract = new this.web3.eth.Contract(tokensABI, this.tokenAddress, {from: aerumAccounts[process.env.privateAerNodeAddressIndex], gas: 4000000});
+
+                // TODO: >>>> if no present tokenDigits in config - pull it from the token contract before approving
+                // TODO: >>>> pull the exchange rate from the templates contract by ID in .env and divide by 10**18
+
+                value = value / Math.pow(10,etherDigits);
+                value = value * Math.pow(10,tokenDigits);
+                value = value * exchangeRate;
+				console.log(`<<<<< the value of value is ${value}`)
                 tokenContract.methods.approve(process.env.AtomicSwapERC20, value).send({from: aerumAccounts[process.env.privateAerNodeAddressIndex], gas: 4000000}).then((approveRes) => {
                   console.log('>>> Token approve call:\n', approveRes);
-                  atomicSwapERC20Contract.methods.open(hash, value, this.tokenAddress, withdrawTrader, timelock).send({from: aerumAccounts[process.env.privateAerNodeAddressIndex], gas: 4000000}).then((erc2Res) => {
-                    console.log('>>> SwapErc20 open call:\n', erc2Res);
 
+                  // removed withdraw trader from erc20 open as it had false logic and removed from the contract
+                  atomicSwapERC20Contract.methods.open(hash, value, this.tokenAddress, timelock).send({from: aerumAccounts[process.env.privateAerNodeAddressIndex], gas: 4000000}).then((erc2Res) => {
+                    console.log('>>> SwapErc20 open call:\n', erc2Res);
                     // Start testing here (don't delete)
                     // this.testClose(atomicSwapERC20Contract);
                    this.swapModel.findOneAndUpdate({swapId: hash}, {$set: {status: 'open'}}, {new: true}).exec();
@@ -144,7 +154,6 @@ export class SwapService {
             });
           }
         });
-
       } else {
         console.log(">>>>received old Open Event for block:"+res.blockNumber)
       }
@@ -184,9 +193,9 @@ export class SwapService {
       if (error) {
         console.log('closeErr', error);
       } else if ( res.blockNumber > currentBlock ) {
-
         const hash = res.returnValues._hash;
         const secretKey = res.returnValues._secretKey;
+        const withdrewBy = res.returnValues._withdrawTrader; // currently not needed but just in case -- A.R.
 
         this.swapModel.findOneAndUpdate({swapId: hash, status: 'open'}, {$set: {secretKey}}).exec();
         // .then((respond) => {

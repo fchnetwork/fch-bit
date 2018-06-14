@@ -1,5 +1,5 @@
 export const AtomicSwapEther = [
-    {
+  {
       "anonymous": false,
       "inputs": [
         {
@@ -149,4 +149,4 @@ export const AtomicSwapEther = [
       "stateMutability": "view",
       "type": "function"
     }
-  ];
+];
