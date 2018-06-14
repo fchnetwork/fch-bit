@@ -128,7 +128,7 @@ export class SwapService {
                 const tokenContract = new this.web3.eth.Contract(tokensABI, this.tokenAddress, {from: aerumAccounts[process.env.privateAerNodeAddressIndex], gas: 4000000});
                 tokenContract.methods.approve(process.env.AtomicSwapERC20, value).send({from: aerumAccounts[process.env.privateAerNodeAddressIndex], gas: 4000000}).then((approveRes) => {
                   console.log('>>> Token approve call:\n', approveRes);
-                  atomicSwapERC20Contract.methods.open(hash, value, this.tokenAddress, aerumAccounts[process.env.privateAerNodeAddressIndex], timelock).send({from: aerumAccounts[process.env.privateAerNodeAddressIndex], gas: 4000000}).then((erc2Res) => {
+                  atomicSwapERC20Contract.methods.open(hash, value, this.tokenAddress, withdrawTrader, timelock).send({from: aerumAccounts[process.env.privateAerNodeAddressIndex], gas: 4000000}).then((erc2Res) => {
                     console.log('>>> SwapErc20 open call:\n', erc2Res);
 
                     // Start testing here (don't delete)
