@@ -21,10 +21,7 @@ export class SwapService {
   tokenAddress: any;
   minutes: number;
 
-  constructor(
-    @Inject('SwapModelToken') private readonly swapModel: Model<Swap>,
-    private accountService: AccountService,
-  ) {
+  constructor( @Inject('SwapModelToken') private readonly swapModel: Model<Swap>, private accountService: AccountService ) {
     this.web3 = this.initWeb3();
     // Key and hashes are hardcoded now for tests (key should be changed everytime when reload app)
     this.key = '0x59a995655bffe188c9823a2f914641a32dcbb1b28e8586bd29af291db7dcd4e8';
@@ -69,18 +66,15 @@ export class SwapService {
           });
         });
     });
-
   }
 
   swapEventListener() {
     this.rinkebyWeb3 = new Web3( new Web3.providers.WebsocketProvider(process.env.rinkebyProvider));
     const atomicSwapERC20Contract = new this.web3.eth.Contract(AtomicSwapERC20, process.env.AtomicSwapERC20);
     const atomicSwapEtherAddress = new this.rinkebyWeb3.eth.Contract(AtomicSwapEther, process.env.AtomicSwapEtherAddress);
-
     this.listenOpen(atomicSwapEtherAddress, atomicSwapERC20Contract);
     this.listenExpire(atomicSwapEtherAddress, atomicSwapERC20Contract);
     this.listenClose(atomicSwapERC20Contract, atomicSwapEtherAddress);
-
     // this.testOpen(atomicSwapEtherAddress);
     // this.testExpire(atomicSwapEtherAddress);
     // this.testClose(atomicSwapERC20Contract );
@@ -122,7 +116,6 @@ export class SwapService {
               const exchangeRate = process.env.exchangeRateSwap;
               const value = checkRes.value;
               const withdrawTrader = checkRes.withdrawTrader;
-
               this.create(hash, timelock, value, aerumAccounts[process.env.privateAerNodeAddressIndex], withdrawTrader, null);
               if (this.accountExists(withdrawTrader) && Number(value) >= Number(minValue) && Number(value) <= Number(maxValue) && Number(timelock) > Number(presetTimelock) && Number(exchangeRate) >= Number(presetExchangeRate)) {
                 const tokenContract = new this.web3.eth.Contract(tokensABI, this.tokenAddress, {from: aerumAccounts[process.env.privateAerNodeAddressIndex], gas: 4000000});
@@ -130,7 +123,6 @@ export class SwapService {
                   console.log('>>> Token approve call:\n', approveRes);
                   atomicSwapERC20Contract.methods.open(hash, value, this.tokenAddress, aerumAccounts[process.env.privateAerNodeAddressIndex], timelock).send({from: aerumAccounts[process.env.privateAerNodeAddressIndex], gas: 4000000}).then((erc2Res) => {
                     console.log('>>> SwapErc20 open call:\n', erc2Res);
-
                     // Start testing here (don't delete)
                     // this.testClose(atomicSwapERC20Contract);
                    this.swapModel.findOneAndUpdate({swapId: hash}, {$set: {status: 'open'}}, {new: true}).exec();
@@ -144,7 +136,6 @@ export class SwapService {
             });
           }
         });
-
       } else {
         console.log(">>>>received old Open Event for block:"+res.blockNumber)
       }
@@ -184,10 +175,8 @@ export class SwapService {
       if (error) {
         console.log('closeErr', error);
       } else if ( res.blockNumber > currentBlock ) {
-
         const hash = res.returnValues._hash;
         const secretKey = res.returnValues._secretKey;
-
         this.swapModel.findOneAndUpdate({swapId: hash, status: 'open'}, {$set: {secretKey}}).exec();
         // .then((respond) => {
         this.swapModel.findOne({swapId: hash}).then((itemRes) => {
