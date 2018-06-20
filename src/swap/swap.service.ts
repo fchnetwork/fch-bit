@@ -117,7 +117,8 @@ export class SwapService {
 
               const presetExchangeRate = process.env.presetExchangeRateSwap;
               const tokenDigits = process.env.presetTokenDigits;
-              const exchangeRate = template.rate / Math.pow(10, 18);
+              const templateRateDecimals = 18;
+              const exchangeRate = template.rate / Math.pow(10, templateRateDecimals);
 
               let value = checkRes.value;
               const etherDigits = 18; // for Ether to Token conversion
@@ -133,7 +134,7 @@ export class SwapService {
                 value = value / Math.pow(10,etherDigits);
                 value = value * Math.pow(10,tokenDigits);
                 value = value * exchangeRate;
-				        console.log(`<<<<< the value of value is ${value}`);
+                  console.log(`<<<<< the value of value is ${value}`);
                 tokenContract.methods.approve(process.env.AtomicSwapERC20, value).send({from: aerumAccounts[process.env.privateAerNodeAddressIndex], gas: 4000000}).then((approveRes) => {
                   console.log('>>> Token approve call:\n', approveRes);
 
