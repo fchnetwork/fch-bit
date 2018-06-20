@@ -1,6 +1,7 @@
 import { Module, MiddlewaresConsumer, NestModule, RequestMethod } from '@nestjs/common';
 import { OrdersModule } from './orders/orders.module';
 import { SwapModule } from './swap/swap.module';
+import { SwapTemplateModule } from './swap-template/swap-template.module';
 import { TransactionsModule } from './transactions/transactions.module';
 import { AccountModule } from './account/account.module';
 import { CorsMiddleware } from './cors.middleware';
@@ -9,6 +10,7 @@ require('dotenv').config({path: '../.env'})
   imports: [
     OrdersModule,
     SwapModule,
+    SwapTemplateModule,
     TransactionsModule,
     AccountModule,
   ],

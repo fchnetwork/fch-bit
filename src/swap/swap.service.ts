@@ -1,6 +1,4 @@
 import { tokensABI } from './../abi/tokens';
-import { TransferDto } from './../transactions/dto/transfer.dto';
-import { UpdateSwapDto } from './dto/update-swap.dto';
 import { Model } from 'mongoose';
 import { Component, Inject } from '@nestjs/common';
 import { Swap } from './interfaces/swap.interface';
@@ -9,6 +7,7 @@ import * as Moment from 'moment';
 import { AccountService } from '../account/services/account.service';
 import { AtomicSwapEther } from './../abi/AtomicSwapEther';
 import { AtomicSwapERC20 } from './../abi/AtomicSwapERC20';
+import { SwapTemplate } from './../swap-template/interfaces/swap-template.interface';
 const Web3 = require('web3');
 
 @Component()
@@ -18,7 +17,6 @@ export class SwapService {
   key: any;
   hash: any;
   prefix: any;
-  tokenAddress: any;
   minutes: number;
 
   constructor( @Inject('SwapModelToken') private readonly swapModel: Model<Swap>, private accountService: AccountService ) {
@@ -26,8 +24,6 @@ export class SwapService {
     // Key and hashes are hardcoded now for tests (key should be changed everytime when reload app)
     this.key = '0x59a995655bffe188c9823a2f914641a32dcbb1b28e8586bd29af291db7dcd4e8';
     this.hash = this.web3.utils.keccak256(this.key);
-    // RINK hardcoded token address
-    this.tokenAddress = process.env.contractAddress;
     this.minutes = Number(process.env.minutes);
   }
 
@@ -68,11 +64,11 @@ export class SwapService {
     });
   }
 
-  swapEventListener() {
+  swapEventListener(template: SwapTemplate) {
     this.rinkebyWeb3 = new Web3( new Web3.providers.WebsocketProvider(process.env.rinkebyProvider));
     const atomicSwapERC20Contract = new this.web3.eth.Contract(AtomicSwapERC20, process.env.AtomicSwapERC20);
     const atomicSwapEtherAddress = new this.rinkebyWeb3.eth.Contract(AtomicSwapEther, process.env.AtomicSwapEtherAddress);
-    this.listenOpen(atomicSwapEtherAddress, atomicSwapERC20Contract);
+    this.listenOpen(atomicSwapEtherAddress, atomicSwapERC20Contract, template);
     this.listenExpire(atomicSwapEtherAddress, atomicSwapERC20Contract);
     this.listenClose(atomicSwapERC20Contract, atomicSwapEtherAddress);
     // this.testOpen(atomicSwapEtherAddress);
@@ -91,7 +87,7 @@ export class SwapService {
     return false;
   }
 
-  async listenOpen(atomicSwapEtherAddress, atomicSwapERC20Contract){
+  async listenOpen(atomicSwapEtherAddress, atomicSwapERC20Contract, template: SwapTemplate){
     const aerumAccounts = await this.web3.eth.getAccounts();
     const currentBlock = await this.rinkebyWeb3.eth.getBlockNumber();
     console.log(">>>> open Current Block Rinkeby "+ currentBlock)
@@ -112,21 +108,24 @@ export class SwapService {
             atomicSwapEtherAddress.methods.check(hash).call().then((checkRes) => {
               console.log('============= SwapERC20.check() =========\n', checkRes);
 
+              const tokenAddress = template.onchainAsset;
               const minValue = process.env.minValueSwap;
               const maxValue = process.env.maxValueSwap;
               const timeLockNow = Moment(new Date());
               const presetTimelock = timeLockNow.add(this.minutes, 'm').unix();
               const timelock = checkRes.timelock;
+
               const presetExchangeRate = process.env.presetExchangeRateSwap;
               const tokenDigits = process.env.presetTokenDigits;
-              const exchangeRate = process.env.exchangeRateSwap;
+              const exchangeRate = template.rate / Math.pow(10, 18);
+
               let value = checkRes.value;
               const etherDigits = 18; // for Ether to Token conversion
               const withdrawTrader = checkRes.withdrawTrader; // it should be one of our Ethereum addresses to respond to that event
 
               this.create(hash, timelock, value, aerumAccounts[process.env.privateAerNodeAddressIndex], withdrawTrader, null);
-              if (this.accountExists(withdrawTrader) && Number(value) >= Number(minValue) && Number(value) <= Number(maxValue) && Number(timelock) > Number(presetTimelock) && Number(exchangeRate) >= Number(presetExchangeRate)) {
-                const tokenContract = new this.web3.eth.Contract(tokensABI, this.tokenAddress, {from: aerumAccounts[process.env.privateAerNodeAddressIndex], gas: 4000000});
+              if (this.accountExists(withdrawTrader) && Number(value) >= Number(minValue) && Number(value) <= Number(maxValue) && Number(timelock) > Number(presetTimelock) && exchangeRate >= Number(presetExchangeRate)) {
+                const tokenContract = new this.web3.eth.Contract(tokensABI, tokenAddress, {from: aerumAccounts[process.env.privateAerNodeAddressIndex], gas: 4000000});
 
                 // TODO: >>>> if no present tokenDigits in config - pull it from the token contract before approving
                 // TODO: >>>> pull the exchange rate from the templates contract by ID in .env and divide by 10**18
@@ -134,12 +133,12 @@ export class SwapService {
                 value = value / Math.pow(10,etherDigits);
                 value = value * Math.pow(10,tokenDigits);
                 value = value * exchangeRate;
-				console.log(`<<<<< the value of value is ${value}`)
+				        console.log(`<<<<< the value of value is ${value}`);
                 tokenContract.methods.approve(process.env.AtomicSwapERC20, value).send({from: aerumAccounts[process.env.privateAerNodeAddressIndex], gas: 4000000}).then((approveRes) => {
                   console.log('>>> Token approve call:\n', approveRes);
 
                   // removed withdraw trader from erc20 open as it had false logic and removed from the contract
-                  atomicSwapERC20Contract.methods.open(hash, value, this.tokenAddress, timelock).send({from: aerumAccounts[process.env.privateAerNodeAddressIndex], gas: 4000000}).then((erc2Res) => {
+                  atomicSwapERC20Contract.methods.open(hash, value, tokenAddress, timelock).send({from: aerumAccounts[process.env.privateAerNodeAddressIndex], gas: 4000000}).then((erc2Res) => {
                     console.log('>>> SwapErc20 open call:\n', erc2Res);
                     // Start testing here (don't delete)
                     // this.testClose(atomicSwapERC20Contract);
