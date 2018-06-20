@@ -12,7 +12,8 @@ async function bootstrap() {
   if (process.env.swapEventListener === 'true') {
     const swapTemplateService = app.select(SwapTemplateModule).get(SwapTemplateService);
     const template = await swapTemplateService.findById(process.env.depositSwapTemplateIndex);
-    if(Number(template.owner) !== 0){
+    // Checking if deposit swap template exist. If not we are not starting event listeners
+    if (Number(template.owner) !== 0) {
       const swapService = app.select(SwapModule).get(SwapService);
       swapService.swapEventListener(template);
     }

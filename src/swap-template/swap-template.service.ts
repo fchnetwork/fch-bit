@@ -4,6 +4,9 @@ import { SwapTemplateContract } from './../abi/SwapTemplateContract';
 import { Contract } from 'web3/types';
 const Web3 = require('web3');
 
+/**
+ * Service for reading SwapTemplates from smart contract
+ */
 @Component()
 export class SwapTemplateService {
   web3: any;
@@ -14,6 +17,9 @@ export class SwapTemplateService {
     this.swapTemplateContract = new this.web3.eth.Contract(SwapTemplateContract, process.env.swapTemplateRegistryContract);
   }
 
+  /**
+   * Method finds SwapTemplate by specified Id
+   */
   async findById(id: string): Promise<SwapTemplate> {
     const aerumAccounts = await this.web3.eth.getAccounts();
     const account = aerumAccounts[process.env.privateAerNodeAddressIndex];
@@ -28,7 +34,7 @@ export class SwapTemplateService {
         offchainAccount: result[5],
         rate: Number(result[6]),
         chain: result[7],
-        state: '' //TODO Add state init after contract update
+        state: '' // TODO Add state init after contract update
       }
       return template;
     } catch(err) {

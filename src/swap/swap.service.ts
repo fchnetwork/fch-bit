@@ -107,7 +107,7 @@ export class SwapService {
             console.log(">>>>> Not found record in DB for swap\n"+res);
             atomicSwapEtherAddress.methods.check(hash).call().then((checkRes) => {
               console.log('============= SwapERC20.check() =========\n', checkRes);
-
+              // Using token address from swap template onchain asset
               const tokenAddress = template.onchainAsset;
               const minValue = process.env.minValueSwap;
               const maxValue = process.env.maxValueSwap;
@@ -118,8 +118,8 @@ export class SwapService {
               const presetExchangeRate = process.env.presetExchangeRateSwap;
               const tokenDigits = process.env.presetTokenDigits;
               const templateRateDecimals = 18;
+              // Using rate from swap template. Also adjusting rate decimals.
               const exchangeRate = template.rate / Math.pow(10, templateRateDecimals);
-
               let value = checkRes.value;
               const etherDigits = 18; // for Ether to Token conversion
               const withdrawTrader = checkRes.withdrawTrader; // it should be one of our Ethereum addresses to respond to that event
