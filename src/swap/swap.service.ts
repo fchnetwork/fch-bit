@@ -5,8 +5,8 @@ import { Swap } from './interfaces/swap.interface';
 import { RegisterSwapDto } from './dto/register-swap.dto';
 import * as Moment from 'moment';
 import { AccountService } from '../account/services/account.service';
-import { AtomicSwapEther } from './../abi/AtomicSwapEther';
-import { AtomicSwapERC20 } from './../abi/AtomicSwapERC20';
+import { OpenAtomicSwapEther } from '../abi/OpenAtomicSwapEther';
+import { CounterAtomicSwapERC20 } from './../abi/CounterAtomicSwapERC20';
 import { SwapTemplate } from './../swap-template/interfaces/swap-template.interface';
 const Web3 = require('web3');
 
@@ -66,8 +66,8 @@ export class SwapService {
 
   swapEventListener(template: SwapTemplate) {
     this.rinkebyWeb3 = new Web3( new Web3.providers.WebsocketProvider(process.env.rinkebyProvider));
-    const atomicSwapERC20Contract = new this.web3.eth.Contract(AtomicSwapERC20, process.env.AtomicSwapERC20);
-    const atomicSwapEtherAddress = new this.rinkebyWeb3.eth.Contract(AtomicSwapEther, process.env.AtomicSwapEtherAddress);
+    const atomicSwapERC20Contract = new this.web3.eth.Contract(CounterAtomicSwapERC20, process.env.AerCounterAtomicSwapERC20);
+    const atomicSwapEtherAddress = new this.rinkebyWeb3.eth.Contract(OpenAtomicSwapEther, process.env.RinOpenAtomicSwapEther);
     this.listenOpen(atomicSwapEtherAddress, atomicSwapERC20Contract, template);
     this.listenExpire(atomicSwapEtherAddress, atomicSwapERC20Contract);
     this.listenClose(atomicSwapERC20Contract, atomicSwapEtherAddress);
@@ -135,7 +135,7 @@ export class SwapService {
                 value = value * Math.pow(10,tokenDigits);
                 value = value * exchangeRate;
                   console.log(`<<<<< the value of value is ${value}`);
-                tokenContract.methods.approve(process.env.AtomicSwapERC20, value).send({from: aerumAccounts[process.env.privateAerNodeAddressIndex], gas: 4000000}).then((approveRes) => {
+                tokenContract.methods.approve(process.env.AerCounterAtomicSwapERC20, value).send({from: aerumAccounts[process.env.privateAerNodeAddressIndex], gas: 4000000}).then((approveRes) => {
                   console.log('>>> Token approve call:\n', approveRes);
 
                   // removed withdraw trader from erc20 open as it had false logic and removed from the contract

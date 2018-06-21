@@ -1,4 +1,4 @@
-export const AtomicSwapEther = [
+export const OpenAtomicSwapEther = [
   {
       "anonymous": false,
       "inputs": [

@@ -1,4 +1,4 @@
-export const AtomicSwapERC20 = [
+export const CounterAtomicSwapERC20 = [
 	{
 	  "anonymous": false,
 	  "inputs": [
