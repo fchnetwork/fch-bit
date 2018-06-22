@@ -2,13 +2,12 @@ import { tokensABI } from './../abi/tokens';
 import { Model } from 'mongoose';
 import { Component, Inject } from '@nestjs/common';
 import { Swap } from './interfaces/swap.interface';
-import { RegisterSwapDto } from './dto/register-swap.dto';
-import * as Moment from 'moment';
-import { AccountService } from '../account/services/account.service';
+import { SwapModelService } from './swap-model.service';
 import { OpenAtomicSwapEther } from '../abi/OpenAtomicSwapEther';
 import { CounterAtomicSwapERC20 } from './../abi/CounterAtomicSwapERC20';
 import { SwapTemplate } from './../swap-template/interfaces/swap-template.interface';
 const Web3 = require('web3');
+import * as Moment from 'moment';
 
 @Component()
 export class SwapService {
@@ -19,7 +18,8 @@ export class SwapService {
   prefix: any;
   minutes: number;
 
-  constructor( @Inject('SwapModelToken') private readonly swapModel: Model<Swap>, private accountService: AccountService ) {
+  constructor(@Inject('SwapModelToken') private readonly swapModel: Model<Swap>, private readonly swapModelService: SwapModelService) {
+
     this.web3 = this.initWeb3();
     // Key and hashes are hardcoded now for tests (key should be changed everytime when reload app)
     this.key = '0x59a995655bffe188c9823a2f914641a32dcbb1b28e8586bd29af291db7dcd4e8';
@@ -29,39 +29,6 @@ export class SwapService {
 
   initWeb3 = () => {
     return new Web3( new Web3.providers.WebsocketProvider(process.env.aerumProvider));
-  }
-
-  async create(swapId?, timelock?, value?, ethTrader?, withdrawTrader?, secretKey?): Promise<Swap> {
-    const registerSwapData: RegisterSwapDto = {
-      swapId,
-      timelock,
-      value,
-      ethTrader,
-      withdrawTrader,
-      secretKey,
-      status: 'pending',
-    };
-    const registeredSwap = new this.swapModel(registerSwapData);
-    return await registeredSwap.save();
-  }
-
-  async findAll(): Promise<Swap[]> {
-    return await this.swapModel.find().exec();
-  }
-
-  async findById(id): Promise<Swap> {
-    return await this.swapModel.findOne({swapId: id}).exec();
-  }
-
-  async update(swapId, secretKey, status): Promise<any> {
-    return new Promise((resolve, reject) => {
-      const updatedTransaction = this.swapModel.findOneAndUpdate({swapId}, {$set: {secretKey, status}})
-        .then((res) => {
-          this.swapModel.findOne({swapId}).then((itemRes) => {
-            resolve(itemRes);
-          });
-        });
-    });
   }
 
   swapEventListener(template: SwapTemplate) {
@@ -124,7 +91,7 @@ export class SwapService {
               const etherDigits = 18; // for Ether to Token conversion
               const withdrawTrader = checkRes.withdrawTrader; // it should be one of our Ethereum addresses to respond to that event
 
-              this.create(hash, timelock, value, aerumAccounts[process.env.privateAerNodeAddressIndex], withdrawTrader, null);
+              this.swapModelService.create(hash, timelock, value, aerumAccounts[process.env.privateAerNodeAddressIndex], withdrawTrader, null);
               if (this.accountExists(withdrawTrader) && Number(value) >= Number(minValue) && Number(value) <= Number(maxValue) && Number(timelock) > Number(presetTimelock) && exchangeRate >= Number(presetExchangeRate)) {
                 const tokenContract = new this.web3.eth.Contract(tokensABI, tokenAddress, {from: aerumAccounts[process.env.privateAerNodeAddressIndex], gas: 4000000});
 
