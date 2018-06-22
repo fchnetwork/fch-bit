@@ -99,7 +99,7 @@ export class SwapService {
                 value = value / Math.pow(10,etherDigits);
                 value = value * Math.pow(10,tokenDigits);
                 value = value * exchangeRate;
-                  console.log(`<<<<< the value of value is ${value}`);
+                console.log(`<<<<< the value of value is ${value}`);
                 tokenContract.methods.approve(process.env.AerCounterAtomicSwapERC20, value).send({from: aerumAccounts[process.env.privateAerNodeAddressIndex], gas: 4000000}).then((approveRes) => {
                   console.log('>>> Token approve call:\n', approveRes);
 

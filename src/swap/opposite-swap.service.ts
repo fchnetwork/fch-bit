@@ -79,6 +79,7 @@ export class OppositeSwapService {
     const hash = res.returnValues._hash;
     const ethAccounts = await this.rinkebyWeb3.eth.getAccounts();
     const ethAccount = ethAccounts[process.env.privateEthNodeAddressIndex];
+
     this.swapStorageService.findById(hash).then(async (swapExists) => {
       // If swap already exists in database, just skip it
       if (swapExists) {
@@ -139,6 +140,7 @@ export class OppositeSwapService {
     const hash = res.returnValues._hash;
     const ethAccounts = await this.rinkebyWeb3.eth.getAccounts();
     const ethAccount = ethAccounts[process.env.privateEthNodeAddressIndex];
+    
     this.swapStorageService.findById(hash).then(async (swap) => {
       if (swap.status === 'open') {
         try {
@@ -167,8 +169,8 @@ export class OppositeSwapService {
     });
   }
 
-  /* TODO: Test methods. Remove after testing.
-  async testAccounts(){
+  /* //TODO: Test methods. Remove after testing.
+  async testAccounts() {
     // JUST FOR TESTING
     this.web3.eth.accounts.wallet.add({
       privateKey: '',
@@ -182,7 +184,7 @@ export class OppositeSwapService {
   }
 
   async testOpen() {
-    const key = '0x92a995655bffe188c9823a2f914641a32dcbb1b28e8586bd29af291db7dcd4e7';
+    const key = '0x96a995655bffe188c9823a2f914641a32dcbb1b28e8586bd29af291db7dcd4e7';
     const hash = this.web3.utils.keccak256(key);
     const account = '';
     const timelock = Moment(new Date()).add(this.minutes + 1, 'm').unix();
@@ -198,7 +200,7 @@ export class OppositeSwapService {
   }
 
   async testExpire(){
-    const key = '0x92a995655bffe188c9823a2f914641a32dcbb1b28e8586bd29af291db7dcd4e7';
+    const key = '0x96a995655bffe188c9823a2f914641a32dcbb1b28e8586bd29af291db7dcd4e7';
     const hash = this.web3.utils.keccak256(key);
     const account = '';
     const openAtomicSwapERC20Contract = new this.web3.eth.Contract(OpenAtomicSwapERC20, process.env.AerOpenAtomicSwapERC20);
@@ -211,7 +213,7 @@ export class OppositeSwapService {
   }
 
   async testClose(){
-    const key = '0x92a995655bffe188c9823a2f914641a32dcbb1b28e8586bd29af291db7dcd4e7';
+    const key = '0x96a995655bffe188c9823a2f914641a32dcbb1b28e8586bd29af291db7dcd4e7';
     const hash = this.web3.utils.keccak256(key);
     const counterAtomicSwapEtherContract = new this.rinkebyWeb3.eth.Contract(CounterAtomicSwapEther, process.env.RinCounterAtomicSwapETH);
     const account = '';
