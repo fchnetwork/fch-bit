@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Put, Body, Param } from '@nestjs/common';
 
-import { SwapModelService } from './swap-model.service';
+import { SwapStorageService } from './swap-storage.service';
 import { Swap } from './interfaces/swap.interface';
 // DTO's
 import { RegisterSwapDto } from './dto/register-swap.dto';
@@ -8,11 +8,11 @@ import { UpdateSwapDto } from './dto/update-swap.dto';
 
 @Controller('swap')
 export class SwapController {
-  constructor(private readonly swapModelService: SwapModelService) {}
+  constructor(private readonly swapStorageService: SwapStorageService) {}
 
   @Post()
   async create(@Body() registerSwapDto: RegisterSwapDto) {
-    return await this.swapModelService.create(registerSwapDto);
+    return await this.swapStorageService.create(registerSwapDto);
   }
 
   // @Put()
@@ -22,11 +22,11 @@ export class SwapController {
 
   @Get()
   async findAll(): Promise<Swap[]> {
-    return this.swapModelService.findAll();
+    return this.swapStorageService.findAll();
   }
 
   @Get(':swapId')
   async findById(@Param() params): Promise<Swap> {
-    return this.swapModelService.findById(params.swapId);
+    return this.swapStorageService.findById(params.swapId);
   }
 }

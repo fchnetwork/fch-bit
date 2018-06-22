@@ -4,7 +4,7 @@ import { RegisterSwapDto } from './dto/register-swap.dto';
 import { Model } from 'mongoose'; 
 
 @Component()
-export class SwapModelService {
+export class SwapStorageService {
   constructor( @Inject('SwapModelToken') private readonly swapModel: Model<Swap>) {
   }
 
@@ -30,14 +30,11 @@ export class SwapModelService {
     return await this.swapModel.findOne({swapId: id}).exec();
   }
 
-  async update(swapId, secretKey, status): Promise<any> {
-    return new Promise((resolve, reject) => {
-      this.swapModel.findOneAndUpdate({swapId}, {$set: {secretKey, status}})
-        .then((res) => {
-          this.swapModel.findOne({swapId}).then((itemRes) => {
-            resolve(itemRes);
-          });
-        });
-    });
+  async updateById(swapId, set): Promise<any> {
+    return this.swapModel.findOneAndUpdate({swapId: swapId}, {$set: set}, {new: true}).exec();
+  }
+
+  async updateByCondition(condition, set): Promise<any> {
+    return this.swapModel.findOneAndUpdate(condition, {$set: set}, {new: true}).exec();
   }
 }

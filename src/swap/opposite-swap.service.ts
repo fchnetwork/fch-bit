@@ -1,8 +1,6 @@
 import { Component, Inject } from '@nestjs/common';
-import { Model } from 'mongoose';
 import { Contract } from 'web3/types';
-import { Swap } from './interfaces/swap.interface';
-import { SwapModelService } from './swap-model.service';
+import { SwapStorageService } from './swap-storage.service';
 import { OpenAtomicSwapERC20 } from './../abi/OpenAtomicSwapERC20';
 import { CounterAtomicSwapEther } from './../abi/CounterAtomicSwapEther';
 import { SwapTemplate } from './../swap-template/interfaces/swap-template.interface';
@@ -22,7 +20,7 @@ export class OppositeSwapService {
   etherDigits = 18;
   templateRateDecimals = 18;
 
-  constructor(@Inject('SwapModelToken') private readonly swapModel: Model<Swap>, private readonly swapModelService: SwapModelService) {
+  constructor(private readonly swapStorageService: SwapStorageService) {
     this.web3 = new Web3(new Web3.providers.WebsocketProvider(process.env.aerumProvider));
     this.rinkebyWeb3 = new Web3(new Web3.providers.WebsocketProvider(process.env.rinkebyProvider));
 
@@ -81,7 +79,7 @@ export class OppositeSwapService {
     const hash = res.returnValues._hash;
     const ethAccounts = await this.rinkebyWeb3.eth.getAccounts();
     const ethAccount = ethAccounts[process.env.privateEthNodeAddressIndex];
-    this.swapModel.findOne({swapId: hash}).then(async (swapExists) => {
+    this.swapStorageService.findById(hash).then(async (swapExists) => {
       // If swap already exists in database, just skip it
       if (swapExists) {
         console.log('opposite swap open >>>>> swap with specified hash already exist', hash);
@@ -95,17 +93,17 @@ export class OppositeSwapService {
         const timelock = Number(checkRes.timelock);
         const erc20Value = Number(checkRes.erc20Value);
         const withdrawTrader = checkRes.withdrawTrader;
-        
+
         if (this.validateSwap(withdrawTrader, erc20Value, timelock, exchangeRate)) {
           const value = this.calcValue(erc20Value, exchangeRate);
           // Adding swap model to database
-          this.swapModelService.create(hash, timelock, value, ethAccount, withdrawTrader, null);
+          this.swapStorageService.create(hash, timelock, value, ethAccount, withdrawTrader, null);
           console.log('opposite swap open >>>>> adding swap model to db');
           // Opening swap in counter swap contract
           var erc2Res = await counterAtomicSwapEtherContract.methods.open(hash, timelock).send({value: value, from: ethAccount, gas: 4000000});
           console.log('opposite swap open >>>>> counter swap ether contract opened', JSON.stringify(erc2Res));
           // Updating swap with open status
-          this.swapModel.findOneAndUpdate({swapId: hash}, {$set: {status: 'open'}}, {new: true}).exec();
+          this.swapStorageService.updateById(hash, {status: 'open'});
         } else {
           console.log('opposite swap open >>>>> ERROR during swap validation', JSON.stringify({
             withdrawTrader: withdrawTrader,
@@ -141,12 +139,11 @@ export class OppositeSwapService {
     const hash = res.returnValues._hash;
     const ethAccounts = await this.rinkebyWeb3.eth.getAccounts();
     const ethAccount = ethAccounts[process.env.privateEthNodeAddressIndex];
-
-    this.swapModel.findOne({swapId: hash}).then(async (swap) => {
+    this.swapStorageService.findById(hash).then(async (swap) => {
       if (swap.status === 'open') {
         try {
           await counterAtomicSwapEtherContract.methods.expire(hash).send({from: ethAccount, gas: 4000000});
-          this.swapModel.findOneAndUpdate({swapId: hash}, {$set: {status: 'expired'}}, {new: true}).exec();
+          this.swapStorageService.updateById(hash, {status: 'expired'});
         } catch(err) {
           console.log('opposite swap expire >>>>> ERROR while expiring counter swap contract', err);
         }
@@ -158,21 +155,19 @@ export class OppositeSwapService {
   private async closeHandler(openAtomicSwapERC20Contract: Contract, res) {
     const hash = res.returnValues._hash;
     const secretKey = res.returnValues._secretKey;
-
-    this.swapModel.findOneAndUpdate({swapId: hash, status: 'open'}, {$set: {secretKey}}).exec();
-    this.swapModel.findOne({swapId: hash}).then(async (swap) => {
+    this.swapStorageService.findById(hash).then(async (swap) => {
       if (swap.status === 'open') {
         try {
           await openAtomicSwapERC20Contract.methods.close(hash, secretKey).send({from: swap.withdrawTrader, gas: 4000000});
-          this.swapModel.findOneAndUpdate({swapId: hash}, {$set: {status: 'closed'}}, {new: true}).exec();
+          this.swapStorageService.updateById(hash, {status: 'closed'});
         } catch(err) {
           console.log('opposite swap close >>>>> ERROR while closing swap contract', err);
         }
       }
     });
   }
-  /*
-  // Testing functions
+
+  /* TODO: Test methods. Remove after testing.
   async testAccounts(){
     // JUST FOR TESTING
     this.web3.eth.accounts.wallet.add({
