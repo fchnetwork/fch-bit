@@ -1,4 +1,4 @@
-export const SwapTemplateContract = [
+export const SwapTemplateRegistry = [
   {
     "constant": true,
     "inputs": [],
@@ -132,6 +132,10 @@ export const SwapTemplateContract = [
       {
         "name": "",
         "type": "uint256"
+      },
+      {
+        "name": "",
+        "type": "uint8"
       },
       {
         "name": "",

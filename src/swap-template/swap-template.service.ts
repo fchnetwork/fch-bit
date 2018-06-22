@@ -1,6 +1,6 @@
 import { Component } from "@nestjs/common";
 import { SwapTemplate, Chain } from "../swap-template/interfaces/swap-template.interface";
-import { SwapTemplateContract } from './../abi/SwapTemplateContract';
+import { SwapTemplateRegistry } from '../abi/SwapTemplateRegistry';
 import { Contract } from 'web3/types';
 const Web3 = require('web3');
 
@@ -14,7 +14,7 @@ export class SwapTemplateService {
 
   constructor() {
     this.web3 = new Web3(new Web3.providers.WebsocketProvider(process.env.aerumProvider));
-    this.swapTemplateContract = new this.web3.eth.Contract(SwapTemplateContract, process.env.swapTemplateRegistryContract);
+    this.swapTemplateContract = new this.web3.eth.Contract(SwapTemplateRegistry, process.env.swapTemplateRegistryContract);
   }
 
   /**
@@ -34,7 +34,7 @@ export class SwapTemplateService {
         offchainAccount: result[5],
         rate: Number(result[6]),
         chain: result[7],
-        state: '' // TODO Add state init after contract update
+        state: result[8]
       }
       return template;
     } catch(err) {

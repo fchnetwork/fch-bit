@@ -1,14 +1,11 @@
 import { tokensABI } from './../abi/tokens';
-import { Model } from 'mongoose';
 import { Component, Inject } from '@nestjs/common';
-import { Swap } from './interfaces/swap.interface';
-import { RegisterSwapDto } from './dto/register-swap.dto';
-import * as Moment from 'moment';
-import { AccountService } from '../account/services/account.service';
-import { AtomicSwapEther } from './../abi/AtomicSwapEther';
-import { AtomicSwapERC20 } from './../abi/AtomicSwapERC20';
+import { SwapStorageService } from './swap-storage.service';
+import { OpenAtomicSwapEther } from '../abi/OpenAtomicSwapEther';
+import { CounterAtomicSwapERC20 } from './../abi/CounterAtomicSwapERC20';
 import { SwapTemplate } from './../swap-template/interfaces/swap-template.interface';
 const Web3 = require('web3');
+import * as Moment from 'moment';
 
 @Component()
 export class SwapService {
@@ -19,7 +16,8 @@ export class SwapService {
   prefix: any;
   minutes: number;
 
-  constructor( @Inject('SwapModelToken') private readonly swapModel: Model<Swap>, private accountService: AccountService ) {
+  constructor(private readonly swapStorageService: SwapStorageService) {
+
     this.web3 = this.initWeb3();
     // Key and hashes are hardcoded now for tests (key should be changed everytime when reload app)
     this.key = '0x59a995655bffe188c9823a2f914641a32dcbb1b28e8586bd29af291db7dcd4e8';
@@ -31,43 +29,10 @@ export class SwapService {
     return new Web3( new Web3.providers.WebsocketProvider(process.env.aerumProvider));
   }
 
-  async create(swapId?, timelock?, value?, ethTrader?, withdrawTrader?, secretKey?): Promise<Swap> {
-    const registerSwapData: RegisterSwapDto = {
-      swapId,
-      timelock,
-      value,
-      ethTrader,
-      withdrawTrader,
-      secretKey,
-      status: 'pending',
-    };
-    const registeredSwap = new this.swapModel(registerSwapData);
-    return await registeredSwap.save();
-  }
-
-  async findAll(): Promise<Swap[]> {
-    return await this.swapModel.find().exec();
-  }
-
-  async findById(id): Promise<Swap> {
-    return await this.swapModel.findOne({swapId: id}).exec();
-  }
-
-  async update(swapId, secretKey, status): Promise<any> {
-    return new Promise((resolve, reject) => {
-      const updatedTransaction = this.swapModel.findOneAndUpdate({swapId}, {$set: {secretKey, status}})
-        .then((res) => {
-          this.swapModel.findOne({swapId}).then((itemRes) => {
-            resolve(itemRes);
-          });
-        });
-    });
-  }
-
   swapEventListener(template: SwapTemplate) {
     this.rinkebyWeb3 = new Web3( new Web3.providers.WebsocketProvider(process.env.rinkebyProvider));
-    const atomicSwapERC20Contract = new this.web3.eth.Contract(AtomicSwapERC20, process.env.AtomicSwapERC20);
-    const atomicSwapEtherAddress = new this.rinkebyWeb3.eth.Contract(AtomicSwapEther, process.env.AtomicSwapEtherAddress);
+    const atomicSwapERC20Contract = new this.web3.eth.Contract(CounterAtomicSwapERC20, process.env.AerCounterAtomicSwapERC20);
+    const atomicSwapEtherAddress = new this.rinkebyWeb3.eth.Contract(OpenAtomicSwapEther, process.env.RinOpenAtomicSwapEther);
     this.listenOpen(atomicSwapEtherAddress, atomicSwapERC20Contract, template);
     this.listenExpire(atomicSwapEtherAddress, atomicSwapERC20Contract);
     this.listenClose(atomicSwapERC20Contract, atomicSwapEtherAddress);
@@ -98,7 +63,7 @@ export class SwapService {
       } else if ( res.blockNumber >= currentBlock ) {
         console.log("==== Entered open event processor at block: "+res.blockNumber+" =====");
         const hash = res.returnValues._hash;
-        this.swapModel.findOne({swapId: hash}).then((swapExists) => {
+        this.swapStorageService.findById(hash).then((swapExists) => {
 
         // TODO:  event open on AtomicSwapEther contract has topic with hash and withdraw trader - need to check if we own address withdrawtrader before doing other checks below
         //  if (this.accountExists(res.returnValues.withdrawTrader~
@@ -124,7 +89,7 @@ export class SwapService {
               const etherDigits = 18; // for Ether to Token conversion
               const withdrawTrader = checkRes.withdrawTrader; // it should be one of our Ethereum addresses to respond to that event
 
-              this.create(hash, timelock, value, aerumAccounts[process.env.privateAerNodeAddressIndex], withdrawTrader, null);
+              this.swapStorageService.create(hash, timelock, value, aerumAccounts[process.env.privateAerNodeAddressIndex], withdrawTrader, null);
               if (this.accountExists(withdrawTrader) && Number(value) >= Number(minValue) && Number(value) <= Number(maxValue) && Number(timelock) > Number(presetTimelock) && exchangeRate >= Number(presetExchangeRate)) {
                 const tokenContract = new this.web3.eth.Contract(tokensABI, tokenAddress, {from: aerumAccounts[process.env.privateAerNodeAddressIndex], gas: 4000000});
 
@@ -134,8 +99,8 @@ export class SwapService {
                 value = value / Math.pow(10,etherDigits);
                 value = value * Math.pow(10,tokenDigits);
                 value = value * exchangeRate;
-                  console.log(`<<<<< the value of value is ${value}`);
-                tokenContract.methods.approve(process.env.AtomicSwapERC20, value).send({from: aerumAccounts[process.env.privateAerNodeAddressIndex], gas: 4000000}).then((approveRes) => {
+                console.log(`<<<<< the value of value is ${value}`);
+                tokenContract.methods.approve(process.env.AerCounterAtomicSwapERC20, value).send({from: aerumAccounts[process.env.privateAerNodeAddressIndex], gas: 4000000}).then((approveRes) => {
                   console.log('>>> Token approve call:\n', approveRes);
 
                   // removed withdraw trader from erc20 open as it had false logic and removed from the contract
@@ -143,7 +108,7 @@ export class SwapService {
                     console.log('>>> SwapErc20 open call:\n', erc2Res);
                     // Start testing here (don't delete)
                     // this.testClose(atomicSwapERC20Contract);
-                   this.swapModel.findOneAndUpdate({swapId: hash}, {$set: {status: 'open'}}, {new: true}).exec();
+                    this.swapStorageService.updateById(hash, {status: 'open'});
                   }).catch((erc2err)=>{
                     console.log('>>>>> Swap DB record update error -- erc2err\n', erc2err);
                   });
@@ -169,12 +134,12 @@ export class SwapService {
         console.log('expired error', error);
       } else if ( res.blockNumber > currentBlock ) {
         const hash = res.returnValues._hash;
-        this.swapModel.findOne({swapId: hash}).then((swapExists) => {
+        this.swapStorageService.findById(hash).then((swapExists) => {
           if (swapExists.status !== 'expired' && swapExists.status !== 'invalid') {
             console.log('expired res', res);
             atomicSwapERC20Contract.methods.expire(hash).send({from: aerumAccounts[process.env.privateAerNodeAddressIndex], gas: 4000000}).then((expireRes) => {
               console.log('erc20expire res', expireRes);
-              this.swapModel.findOneAndUpdate({swapId: hash}, {$set: {status: 'expired'}}, {new: true}).exec();
+              this.swapStorageService.updateById(hash, {status: 'expired'});
             }).catch((expireErr) => {
               console.log('expireRess', expireErr);
             });
@@ -197,13 +162,13 @@ export class SwapService {
         const secretKey = res.returnValues._secretKey;
         const withdrewBy = res.returnValues._withdrawTrader; // currently not needed but just in case -- A.R.
 
-        this.swapModel.findOneAndUpdate({swapId: hash, status: 'open'}, {$set: {secretKey}}).exec();
+        this.swapStorageService.updateByCondition({swapId: hash, status: 'open'}, {secretKey});
         // .then((respond) => {
-        this.swapModel.findOne({swapId: hash}).then((itemRes) => {
+        this.swapStorageService.findById(hash).then((itemRes) => {
           console.log('found item res', itemRes);
           atomicSwapEtherAddress.methods.close(hash, secretKey).send({from: itemRes.withdrawTrader, gas: 4000000}).then((methodRes) => {
             console.log('final close', methodRes);
-            this.swapModel.findOneAndUpdate({swapId: hash}, {$set: {status: 'closed'}}, {new: true}).exec();
+            this.swapStorageService.updateById(hash, {status: 'closed'});
           }).catch((finalCloseErr) => {
             console.log(finalCloseErr);
           });
