@@ -1,4 +1,4 @@
-import { Component, Inject } from '@nestjs/common';
+import { Component } from '@nestjs/common';
 import { Contract } from 'web3/types';
 import { SwapStorageService } from './swap-storage.service';
 import { OpenAtomicSwapERC20 } from './../abi/OpenAtomicSwapERC20';
@@ -89,7 +89,6 @@ export class OppositeSwapService {
       try {
         console.log('opposite swap open >>>>> not found record in db for swap');
         const checkRes = await openAtomicSwapERC20Contract.methods.check(hash).call();
-
         const exchangeRate = template.rate / Math.pow(10, this.templateRateDecimals);
         const timelock = Number(checkRes.timelock);
         const erc20Value = Number(checkRes.erc20Value);
@@ -125,9 +124,9 @@ export class OppositeSwapService {
 
   private calcValue(value: number, exchangeRate: number): number {
     value = value / Math.pow(10, this.tokenDigits);
-    value = value * Math.pow(10, this.etherDigits);
     value = value * exchangeRate;
-    return Web3.utils.toWei(value.toString(), 'ether');
+    const result = Web3.utils.toWei(value.toString(), 'ether');
+    return result;
   }
 
   private validateSwap(withdrawTrader: string, value: number, timelock: number, exchangeRate: number) : boolean {
@@ -155,12 +154,15 @@ export class OppositeSwapService {
 
   // Handler for close events
   private async closeHandler(openAtomicSwapERC20Contract: Contract, res) {
+    const aerumAccounts = await this.web3.eth.getAccounts();
+    const aerumAccount = aerumAccounts[process.env.privateAerNodeAddressIndex];
+
     const hash = res.returnValues._hash;
     const secretKey = res.returnValues._secretKey;
     this.swapStorageService.findById(hash).then(async (swap) => {
       if (swap.status === 'open') {
         try {
-          await openAtomicSwapERC20Contract.methods.close(hash, secretKey).send({from: swap.withdrawTrader, gas: 4000000});
+          await openAtomicSwapERC20Contract.methods.close(hash, secretKey).send({from: aerumAccount, gas: 4000000});
           this.swapStorageService.updateById(hash, {status: 'closed'});
         } catch(err) {
           console.log('opposite swap close >>>>> ERROR while closing swap contract', err);
