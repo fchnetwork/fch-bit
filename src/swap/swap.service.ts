@@ -10,7 +10,7 @@ import * as Moment from 'moment';
 @Component()
 export class SwapService {
   web3: any;
-  rinkebyWeb3: any;
+  ethWeb3: any;
   key: any;
   hash: any;
   prefix: any;
@@ -30,9 +30,9 @@ export class SwapService {
   }
 
   swapEventListener(template: SwapTemplate) {
-    this.rinkebyWeb3 = new Web3( new Web3.providers.WebsocketProvider(process.env.rinkebyProvider));
+    this.ethWeb3 = new Web3( new Web3.providers.WebsocketProvider(process.env.ethProvider));
     const atomicSwapERC20Contract = new this.web3.eth.Contract(CounterAtomicSwapERC20, process.env.AerCounterAtomicSwapERC20);
-    const atomicSwapEtherAddress = new this.rinkebyWeb3.eth.Contract(OpenAtomicSwapEther, process.env.RinOpenAtomicSwapEther);
+    const atomicSwapEtherAddress = new this.ethWeb3.eth.Contract(OpenAtomicSwapEther, process.env.EthOpenAtomicSwapEther);
     this.listenOpen(atomicSwapEtherAddress, atomicSwapERC20Contract, template);
     this.listenExpire(atomicSwapEtherAddress, atomicSwapERC20Contract);
     this.listenClose(atomicSwapERC20Contract, atomicSwapEtherAddress);
@@ -43,7 +43,7 @@ export class SwapService {
   }
 
   async accountExists(withdrawTrader) {
-    const accounts = await this.rinkebyWeb3.eth.getAccounts();
+    const accounts = await this.ethWeb3.eth.getAccounts();
     for (const i of accounts) {
       if (i === withdrawTrader) {
         return true;
@@ -54,8 +54,8 @@ export class SwapService {
 
   async listenOpen(atomicSwapEtherAddress, atomicSwapERC20Contract, template: SwapTemplate){
     const aerumAccounts = await this.web3.eth.getAccounts();
-    const currentBlock = await this.rinkebyWeb3.eth.getBlockNumber();
-    console.log(">>>> open Current Block Rinkeby "+ currentBlock)
+    const currentBlock = await this.ethWeb3.eth.getBlockNumber();
+    console.log(">>>> open Current Block Eth "+ currentBlock)
     atomicSwapEtherAddress.events.Open({}, { fromBlock:currentBlock-1, toBlock: 'latest' }, (error, res) => {
       console.log(">>>> open block num "+ res.blockNumber)
       if (error) {
@@ -127,8 +127,8 @@ export class SwapService {
 
   async listenExpire(atomicSwapEtherAddress, atomicSwapERC20Contract){
     const aerumAccounts = await this.web3.eth.getAccounts();
-    const currentBlock = await this.rinkebyWeb3.eth.getBlockNumber();
-    console.log("Expire Current Block Rinkeby "+ currentBlock)
+    const currentBlock = await this.ethWeb3.eth.getBlockNumber();
+    console.log("Expire Current Block Eth "+ currentBlock)
     atomicSwapEtherAddress.events.Expire({}, { fromBlock: currentBlock-1, toBlock: 'latest' }, (error, res) => {
       if (error) {
         console.log('expired error', error);

@@ -10,7 +10,7 @@ const Web3 = require('web3');
 @Component()
 export class OppositeSwapService {
   web3: any;
-  rinkebyWeb3: any;
+  ethWeb3: any;
 
   minutes: number;
   minValue: number;
@@ -22,7 +22,7 @@ export class OppositeSwapService {
 
   constructor(private readonly swapStorageService: SwapStorageService) {
     this.web3 = new Web3(new Web3.providers.WebsocketProvider(process.env.aerumProvider));
-    this.rinkebyWeb3 = new Web3(new Web3.providers.WebsocketProvider(process.env.rinkebyProvider));
+    this.ethWeb3 = new Web3(new Web3.providers.WebsocketProvider(process.env.ethProvider));
 
     this.minutes = Number(process.env.minutes);
     this.minValue = Number(process.env.minValueSwap);
@@ -33,13 +33,13 @@ export class OppositeSwapService {
 
   async swapEventListener(template: SwapTemplate) {
     const openAtomicSwapERC20Contract = new this.web3.eth.Contract(OpenAtomicSwapERC20, process.env.AerOpenAtomicSwapERC20);
-    const counterAtomicSwapEtherContract = new this.rinkebyWeb3.eth.Contract(CounterAtomicSwapEther, process.env.RinCounterAtomicSwapETH);
+    const counterAtomicSwapEtherContract = new this.ethWeb3.eth.Contract(CounterAtomicSwapEther, process.env.EthCounterAtomicSwapETH);
 
     const aerCurrentBlock = await this.web3.eth.getBlockNumber();
     console.log('opposite swap >>>> current block aerum', aerCurrentBlock);
 
-    const rinCurrentBlock = await this.rinkebyWeb3.eth.getBlockNumber();
-    console.log('opposite swap >>>> current block rinkeby', rinCurrentBlock);
+    const ethCurrentBlock = await this.ethWeb3.eth.getBlockNumber();
+    console.log('opposite swap >>>> current block eth', ethCurrentBlock);
 
     // Open events registration
     openAtomicSwapERC20Contract.events.Open({ fromBlock: aerCurrentBlock - 1 }, (error, res) => {
@@ -54,8 +54,8 @@ export class OppositeSwapService {
     });
 
     // Close events registration
-    counterAtomicSwapEtherContract.events.Close({ fromBlock: rinCurrentBlock - 1 }, (error, res) => {
-      this.registrationBodyTemplate(rinCurrentBlock, error, res,
+    counterAtomicSwapEtherContract.events.Close({ fromBlock: ethCurrentBlock - 1 }, (error, res) => {
+      this.registrationBodyTemplate(ethCurrentBlock, error, res,
         async () => await this.closeHandler(openAtomicSwapERC20Contract, res));
     });
   }
@@ -77,7 +77,7 @@ export class OppositeSwapService {
   // Handler for expire events
   private async openHandler(openAtomicSwapERC20Contract: Contract, counterAtomicSwapEtherContract: Contract, template: SwapTemplate, res) {
     const hash = res.returnValues._hash;
-    const ethAccounts = await this.rinkebyWeb3.eth.getAccounts();
+    const ethAccounts = await this.ethWeb3.eth.getAccounts();
     const ethAccount = ethAccounts[process.env.privateEthNodeAddressIndex];
 
     this.swapStorageService.findById(hash).then(async (swapExists) => {
@@ -137,7 +137,7 @@ export class OppositeSwapService {
   // Handler for expire events
   private async expireHandler(counterAtomicSwapEtherContract: Contract, res) {
     const hash = res.returnValues._hash;
-    const ethAccounts = await this.rinkebyWeb3.eth.getAccounts();
+    const ethAccounts = await this.ethWeb3.eth.getAccounts();
     const ethAccount = ethAccounts[process.env.privateEthNodeAddressIndex];
     
     this.swapStorageService.findById(hash).then(async (swap) => {
@@ -145,6 +145,7 @@ export class OppositeSwapService {
         try {
           await counterAtomicSwapEtherContract.methods.expire(hash).send({from: ethAccount, gas: 4000000});
           this.swapStorageService.updateById(hash, {status: 'expired'});
+          console.log('opposite swap open >>>>> counter swap ether contract expired');
         } catch(err) {
           console.log('opposite swap expire >>>>> ERROR while expiring counter swap contract', err);
         }
@@ -164,6 +165,7 @@ export class OppositeSwapService {
         try {
           await openAtomicSwapERC20Contract.methods.close(hash, secretKey).send({from: aerumAccount, gas: 4000000});
           this.swapStorageService.updateById(hash, {status: 'closed'});
+          console.log('opposite swap open >>>>> swap erc20 contract closed');
         } catch(err) {
           console.log('opposite swap close >>>>> ERROR while closing swap contract', err);
         }
@@ -179,7 +181,7 @@ export class OppositeSwapService {
       address: ''
     });
 
-    this.rinkebyWeb3.eth.accounts.wallet.add({
+    this.ethWeb3.eth.accounts.wallet.add({
       privateKey: '',
       address: ''
     });
@@ -217,7 +219,7 @@ export class OppositeSwapService {
   async testClose(){
     const key = '0x96a995655bffe188c9823a2f914641a32dcbb1b28e8586bd29af291db7dcd4e7';
     const hash = this.web3.utils.keccak256(key);
-    const counterAtomicSwapEtherContract = new this.rinkebyWeb3.eth.Contract(CounterAtomicSwapEther, process.env.RinCounterAtomicSwapETH);
+    const counterAtomicSwapEtherContract = new this.ethWeb3.eth.Contract(CounterAtomicSwapEther, process.env.EthCounterAtomicSwapETH);
     const account = '';
 
     try {
