@@ -155,15 +155,12 @@ export class OppositeSwapService {
 
   // Handler for close events
   private async closeHandler(openAtomicSwapERC20Contract: Contract, res) {
-    const aerumAccounts = await this.web3.eth.getAccounts();
-    const aerumAccount = aerumAccounts[process.env.privateAerNodeAddressIndex];
-
     const hash = res.returnValues._hash;
     const secretKey = res.returnValues._secretKey;
     this.swapStorageService.findById(hash).then(async (swap) => {
       if (swap.status === 'open') {
         try {
-          await openAtomicSwapERC20Contract.methods.close(hash, secretKey).send({from: aerumAccount, gas: 4000000});
+          await openAtomicSwapERC20Contract.methods.close(hash, secretKey).send({from: swap.withdrawTrader, gas: 4000000});
           this.swapStorageService.updateById(hash, {status: 'closed'});
           console.log('opposite swap open >>>>> swap erc20 contract closed');
         } catch(err) {
