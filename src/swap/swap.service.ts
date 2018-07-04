@@ -10,7 +10,6 @@ import { CounterAtomicSwapERC20 } from './../abi/CounterAtomicSwapERC20';
 import { SwapTemplate } from './../swap-template/interfaces/swap-template.interface';
 import { TokenType } from './../swap/interfaces/swap.interface';
 
-
 @Component()
 export class SwapService {
   web3: any;
@@ -33,6 +32,10 @@ export class SwapService {
     return new Web3( new Web3.providers.WebsocketProvider(process.env.aerumProvider));
   }
 
+  /**
+   * Registrates open, close and expire event listners
+   * @param {SwapTemplate} template - swap template
+   */
   swapEventListener(template: SwapTemplate) {
     this.ethWeb3 = new Web3( new Web3.providers.WebsocketProvider(process.env.ethProvider));
     const atomicSwapERC20Contract = new this.web3.eth.Contract(CounterAtomicSwapERC20, process.env.AerCounterAtomicSwapERC20);

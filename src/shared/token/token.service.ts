@@ -13,14 +13,12 @@ export class TokenService {
     this.ethWeb3 = new Web3(new Web3.providers.WebsocketProvider(process.env.ethProvider));
   }
 
-  private async safePromise<T>(promise: Promise<T>, defaultValue: T = null) {
-    try {
-      return await promise;
-    } catch (e) {
-      return defaultValue;
-    }
-  }
-
+  /**
+   * Returns ERC20 token information in aerum network
+   * @param {string} contractAddress - contract address
+   * @param {string} account - account address
+   * @return {{address, symbol, decimals, totalSupply, balance}} - token information
+   */
   public async getAerNetworkTokenInfo(contractAddress: string, account: string): Promise<{address, symbol, decimals, totalSupply, balance}> {
     if (!this.web3.utils.isAddress(contractAddress)) {
       throw new Error('Address is not valid');
@@ -29,6 +27,12 @@ export class TokenService {
     return this.getNetworkTokenInfo(tokenContract, contractAddress, account);
   }
 
+  /**
+   * Returns ERC20 token information in ethereum network
+   * @param {string} contractAddress - contract address
+   * @param {string} account - account address
+   * @return {{address, symbol, decimals, totalSupply, balance}} - token information
+   */
   public async getEthNetworkTokenInfo(contractAddress: string, account: string): Promise<{address, symbol, decimals, totalSupply, balance}> {
     if (!this.ethWeb3.utils.isAddress(contractAddress)) {
       throw new Error('Address is not valid');
@@ -61,4 +65,11 @@ export class TokenService {
     return token;
   }
 
+  private async safePromise<T>(promise: Promise<T>, defaultValue: T = null) {
+    try {
+      return await promise;
+    } catch (e) {
+      return defaultValue;
+    }
+  }
 }

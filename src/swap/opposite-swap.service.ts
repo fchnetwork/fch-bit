@@ -3,7 +3,7 @@ import { Contract } from 'web3/types';
 
 const Web3 = require('web3');
 
-import { registrationBodyTemplate, validateEthAccountSwap, validateAerAccountSwap } from '../shared/helpers/swap-utils';
+import { registrationBodyTemplate, validateAerAccountSwap } from '../shared/helpers/swap-utils';
 import { SwapStorageService } from './swap-storage.service';
 import { OpenAtomicSwapERC20 } from './../abi/OpenAtomicSwapERC20';
 import { CounterAtomicSwapEther } from './../abi/CounterAtomicSwapEther';
@@ -26,6 +26,10 @@ export class OppositeSwapService {
     this.tokenDigits = Number(process.env.presetTokenDigits);
   }
 
+  /**
+   * Registrates open, close and expire event listners
+   * @param {SwapTemplate} template - swap template
+   */
   async swapEventListener(template: SwapTemplate) {
     const openAtomicSwapERC20Contract = new this.web3.eth.Contract(OpenAtomicSwapERC20, process.env.AerOpenAtomicSwapERC20);
     const counterAtomicSwapEtherContract = new this.ethWeb3.eth.Contract(CounterAtomicSwapEther, process.env.EthCounterAtomicSwapETH);

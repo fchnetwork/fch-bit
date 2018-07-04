@@ -26,6 +26,10 @@ export class SwapErc20Service {
     this.templateRateDecimals = Number(process.env.templateRateDecimals);
   }
 
+  /**
+   * Registrates open, close and expire event listners
+   * @param {SwapTemplate} template - swap template
+   */
   async swapEventListener(template: SwapTemplate) {
     const openAtomicSwapERC20Contract = new this.ethWeb3.eth.Contract(OpenAtomicSwapERC20, process.env.EthOpenAtomicSwapERC20);
     const counterAtomicSwapERC20Contract = new this.web3.eth.Contract(CounterAtomicSwapERC20, process.env.AerCounterAtomicSwapERC20);
@@ -55,7 +59,7 @@ export class SwapErc20Service {
     });
   }
 
-  // Handler for expire events
+  // Handler for open events
   private async openHandler(openAtomicSwapERC20Contract: Contract, counterAtomicSwapERC20Contract: Contract, template: SwapTemplate, res) {
     const hash = res.returnValues._hash;
     const aerumAccounts = await this.web3.eth.getAccounts();
