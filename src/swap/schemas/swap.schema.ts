@@ -8,4 +8,5 @@ export const SwapSchema = new mongoose.Schema({
   withdrawTrader: String,
   secretKey: String,
   status: String,
+  tokenType: Number
 });

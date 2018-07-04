@@ -1,3 +1,5 @@
+import { TokenType } from './../interfaces/swap.interface';
+
 export class RegisterSwapDto {
   swapId: string;
   timelock: number;
@@ -6,4 +8,5 @@ export class RegisterSwapDto {
   withdrawTrader: string;
   secretKey: string;
   status: string;
+  tokenType: TokenType
 }
