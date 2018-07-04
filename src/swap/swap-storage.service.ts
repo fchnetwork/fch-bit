@@ -8,7 +8,7 @@ export class SwapStorageService {
   constructor( @Inject('SwapModelToken') private readonly swapModel: Model<Swap>) {
   }
 
-  async create(swapId?, timelock?, value?, ethTrader?, withdrawTrader?, secretKey?): Promise<Swap> {
+  async create(swapId?, timelock?, value?, ethTrader?, withdrawTrader?, secretKey?, tokenType?): Promise<Swap> {
     const registerSwapData: RegisterSwapDto = {
       swapId,
       timelock,
@@ -17,6 +17,7 @@ export class SwapStorageService {
       withdrawTrader,
       secretKey,
       status: 'pending',
+      tokenType: tokenType
     };
     const registeredSwap = new this.swapModel(registerSwapData);
     return await registeredSwap.save();

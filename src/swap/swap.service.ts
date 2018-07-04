@@ -1,11 +1,15 @@
 import { tokensABI } from './../abi/tokens';
 import { Component, Inject } from '@nestjs/common';
+
+const Web3 = require('web3');
+import * as Moment from 'moment';
+
 import { SwapStorageService } from './swap-storage.service';
 import { OpenAtomicSwapEther } from '../abi/OpenAtomicSwapEther';
 import { CounterAtomicSwapERC20 } from './../abi/CounterAtomicSwapERC20';
 import { SwapTemplate } from './../swap-template/interfaces/swap-template.interface';
-const Web3 = require('web3');
-import * as Moment from 'moment';
+import { TokenType } from './../swap/interfaces/swap.interface';
+
 
 @Component()
 export class SwapService {
@@ -89,7 +93,7 @@ export class SwapService {
               const etherDigits = 18; // for Ether to Token conversion
               const withdrawTrader = checkRes.withdrawTrader; // it should be one of our Ethereum addresses to respond to that event
 
-              this.swapStorageService.create(hash, timelock, value, aerumAccounts[process.env.privateAerNodeAddressIndex], withdrawTrader, null);
+              this.swapStorageService.create(hash, timelock, value, aerumAccounts[process.env.privateAerNodeAddressIndex], withdrawTrader, null, TokenType.Eth);
               if (this.accountExists(withdrawTrader) && Number(value) >= Number(minValue) && Number(value) <= Number(maxValue) && Number(timelock) > Number(presetTimelock) && exchangeRate >= Number(presetExchangeRate)) {
                 const tokenContract = new this.web3.eth.Contract(tokensABI, tokenAddress, {from: aerumAccounts[process.env.privateAerNodeAddressIndex], gas: 4000000});
 
@@ -165,6 +169,14 @@ export class SwapService {
         this.swapStorageService.updateByCondition({swapId: hash, status: 'open'}, {secretKey});
         // .then((respond) => {
         this.swapStorageService.findById(hash).then((itemRes) => {
+          if(!itemRes){
+            console.log("received Close Event for null swap, skipping");
+            return;
+          }
+          if(itemRes.tokenType !== TokenType.Eth){
+            console.log("received Close Event for ERC20 token, skipping");
+            return;
+          }
           console.log('found item res', itemRes);
           atomicSwapEtherAddress.methods.close(hash, secretKey).send({from: itemRes.withdrawTrader, gas: 4000000}).then((methodRes) => {
             console.log('final close', methodRes);
