@@ -7,6 +7,7 @@ import { SwapTemplateModule } from './swap-template/swap-template.module';
 import { SwapService } from './swap/swap.service';
 import { SwapErc20Service } from './swap/swap.erc20.service';
 import { OppositeSwapService } from './swap/opposite-swap.service';
+import { OppositeSwapErc20Service } from './swap/opposite-swap.erc20.service';
 import { SwapTemplateService } from './swap-template/swap-template.service';
 
 async function bootstrap() {
@@ -18,21 +19,28 @@ async function bootstrap() {
     // Checking if deposit swap template exist. If not we are not starting event listeners
     if (Number(depositTemplate.owner) !== 0) {
       const swapService = app.select(SwapModule).get(SwapService);
-      swapService.swapEventListener(depositTemplate);
+      await swapService.swapEventListener(depositTemplate);
     }
 
     const depositErc20Template = await swapTemplateService.findById(process.env.depositErc20SwapTemplateIndex);
     // Checking if deposit swap template exist. If not we are not starting event listeners
     if (Number(depositErc20Template.owner) !== 0) {
       const swapErc20Service = app.select(SwapModule).get(SwapErc20Service);
-      swapErc20Service.swapEventListener(depositErc20Template);
+       await swapErc20Service.swapEventListener(depositErc20Template);
     }
 
     const withdrawalTemplate = await swapTemplateService.findById(process.env.withdrawalSwapTemplateIndex);
     // Checking if withdrawal swap template exist. If not we are not starting event listeners
     if (Number(withdrawalTemplate.owner) !== 0) {
       const oppositeSwapService = app.select(SwapModule).get(OppositeSwapService);
-      oppositeSwapService.swapEventListener(withdrawalTemplate);
+      await oppositeSwapService.swapEventListener(withdrawalTemplate);
+    }
+
+    const withdrawalErc20Template = await swapTemplateService.findById(process.env.withdrawalErc20SwapTemplateIndex);
+    // Checking if withdrawal swap template exist. If not we are not starting event listeners
+    if (Number(withdrawalErc20Template.owner) !== 0) {
+      const oppositeErc20SwapService = app.select(SwapModule).get(OppositeSwapErc20Service);
+      await oppositeErc20SwapService.swapEventListener(withdrawalErc20Template);
     }
   }
   if(process.env.Production == true) {

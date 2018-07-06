@@ -9,6 +9,7 @@ import { OpenAtomicSwapEther } from '../abi/OpenAtomicSwapEther';
 import { CounterAtomicSwapERC20 } from './../abi/CounterAtomicSwapERC20';
 import { SwapTemplate } from './../swap-template/interfaces/swap-template.interface';
 import { TokenType } from './../swap/interfaces/swap.interface';
+import { AerumNameService } from '../shared/aerum-name-service/aerum-name.service';
 
 @Component()
 export class SwapService {
@@ -19,8 +20,8 @@ export class SwapService {
   prefix: any;
   minutes: number;
 
-  constructor(private readonly swapStorageService: SwapStorageService) {
-
+  constructor(private readonly swapStorageService: SwapStorageService,
+    private readonly aerumNameService: AerumNameService) {
     this.web3 = this.initWeb3();
     // Key and hashes are hardcoded now for tests (key should be changed everytime when reload app)
     this.key = '0x59a995655bffe188c9823a2f914641a32dcbb1b28e8586bd29af291db7dcd4e8';
@@ -36,13 +37,16 @@ export class SwapService {
    * Registrates open, close and expire event listners
    * @param {SwapTemplate} template - swap template
    */
-  swapEventListener(template: SwapTemplate) {
+  async swapEventListener(template: SwapTemplate) {
     this.ethWeb3 = new Web3( new Web3.providers.WebsocketProvider(process.env.ethProvider));
     const atomicSwapERC20Contract = new this.web3.eth.Contract(CounterAtomicSwapERC20, process.env.AerCounterAtomicSwapERC20);
     const atomicSwapEtherAddress = new this.ethWeb3.eth.Contract(OpenAtomicSwapEther, process.env.EthOpenAtomicSwapEther);
-    this.listenOpen(atomicSwapEtherAddress, atomicSwapERC20Contract, template);
-    this.listenExpire(atomicSwapEtherAddress, atomicSwapERC20Contract);
-    this.listenClose(atomicSwapERC20Contract, atomicSwapEtherAddress);
+
+    const normalizedTemplate =  await this.aerumNameService.normalizeTemplate(template);
+
+    this.listenOpen(atomicSwapEtherAddress, atomicSwapERC20Contract, normalizedTemplate);
+    this.listenExpire(atomicSwapEtherAddress, atomicSwapERC20Contract, normalizedTemplate);
+    this.listenClose(atomicSwapERC20Contract, atomicSwapEtherAddress, normalizedTemplate);
     // this.testOpen(atomicSwapEtherAddress);
     // this.testExpire(atomicSwapEtherAddress);
     // this.testClose(atomicSwapERC20Contract );
@@ -94,7 +98,11 @@ export class SwapService {
               const exchangeRate = template.rate / Math.pow(10, templateRateDecimals);
               let value = checkRes.value;
               const etherDigits = 18; // for Ether to Token conversion
-              const withdrawTrader = checkRes.withdrawTrader; // it should be one of our Ethereum addresses to respond to that event
+              const withdrawTrader = checkRes.withdrawTrader.toLowerCase(); // it should be one of our Ethereum addresses to respond to that event
+              if(withdrawTrader !== template.offchainAccount) {
+                console.log('received Open Event. template trader doesn\'t match swap trader. skipping');
+                return;
+              }
 
               this.swapStorageService.create(hash, timelock, value, aerumAccounts[process.env.privateAerNodeAddressIndex], withdrawTrader, null, TokenType.Eth);
               if (this.accountExists(withdrawTrader) && Number(value) >= Number(minValue) && Number(value) <= Number(maxValue) && Number(timelock) > Number(presetTimelock) && exchangeRate >= Number(presetExchangeRate)) {
@@ -132,7 +140,7 @@ export class SwapService {
     });
   }
 
-  async listenExpire(atomicSwapEtherAddress, atomicSwapERC20Contract){
+  async listenExpire(atomicSwapEtherAddress, atomicSwapERC20Contract, template: SwapTemplate) {
     const aerumAccounts = await this.web3.eth.getAccounts();
     const currentBlock = await this.ethWeb3.eth.getBlockNumber();
     console.log("Expire Current Block Eth "+ currentBlock)
@@ -142,6 +150,14 @@ export class SwapService {
       } else if ( res.blockNumber > currentBlock ) {
         const hash = res.returnValues._hash;
         this.swapStorageService.findById(hash).then((swapExists) => {
+          if(!swapExists){
+            console.log("received Expire Event for null swap, skipping");
+            return;
+          }
+          if(swapExists.withdrawTrader !== template.offchainAccount) {
+            console.log('received Expire Event. template trader doesn\'t match swap trader. skipping');
+            return;
+          }
           if (swapExists.status !== 'expired' && swapExists.status !== 'invalid') {
             console.log('expired res', res);
             atomicSwapERC20Contract.methods.expire(hash).send({from: aerumAccounts[process.env.privateAerNodeAddressIndex], gas: 4000000}).then((expireRes) => {
@@ -158,7 +174,7 @@ export class SwapService {
     });
   }
 
-  async listenClose(contract, atomicSwapEtherAddress){
+  async listenClose(contract, atomicSwapEtherAddress, template: SwapTemplate) {
     const currentBlock = await this.web3.eth.getBlockNumber();
     console.log("close Current Block aerum "+ currentBlock)
     contract.events.Close({}, { fromBlock: currentBlock-1, toBlock: 'latest' }, (error, res) => {
@@ -176,8 +192,8 @@ export class SwapService {
             console.log("received Close Event for null swap, skipping");
             return;
           }
-          if(itemRes.tokenType !== TokenType.Eth){
-            console.log("received Close Event for ERC20 token, skipping");
+          if(itemRes.withdrawTrader !== template.offchainAccount) {
+            console.log('received Close Event. template trader doesn\'t match swap trader. skipping');
             return;
           }
           console.log('found item res', itemRes);
