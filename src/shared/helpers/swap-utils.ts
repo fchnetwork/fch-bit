@@ -20,6 +20,20 @@ async function ethAccountExists(withdrawTrader): Promise<boolean> {
   return (await ethWeb3.eth.getAccounts()).some(account => account === withdrawTrader);
 }
 
+export function calcEthAmount(value: number, tokenDecimals: number, exchangeRate: number): number {
+  value = value / Math.pow(10, tokenDecimals);
+  value = value * exchangeRate;
+  const result = Web3.utils.toWei(value.toString(), 'ether');
+  return result;
+}
+
+export function calcTokenAmount(value: number, tokenDecimals: number, destTokenDecimals: number, exchangeRate: number): number {
+  value = value / Math.pow(10, tokenDecimals);
+  value = value * exchangeRate;
+  const result = value * Math.pow(10, destTokenDecimals);
+  return result;
+}
+
 async function aerAccountExists(withdrawTrader): Promise<boolean> {
   const web3 = new Web3(new Web3.providers.WebsocketProvider(process.env.aerumProvider));
   return (await web3.eth.getAccounts()).some(account => account === withdrawTrader);
