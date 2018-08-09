@@ -29,4 +29,9 @@ export class TransactionsController {
   async tokenPayment(@Body() paymentDto: PaymentDto) {
     return await this.transactionsService.tokenPayment(paymentDto);
   }
+
+  @Get('request-faucet')
+  async requestFaucet() {
+    return await this.transactionsService.requestFaucet();
+  }
 }

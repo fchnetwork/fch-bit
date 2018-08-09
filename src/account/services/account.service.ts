@@ -1,6 +1,11 @@
 import { Component, Inject } from '@nestjs/common';
 import { tokensABI } from '../../abi/tokens';
+import { WalletDto } from '../dto/wallet.dto';
 const Web3 = require('web3');
+
+const ethUtil = require('ethereumjs-util');
+const hdkey   = require("ethereumjs-wallet/hdkey");
+const bip39   = require("bip39");
 
 @Component()
 export class AccountService {
@@ -17,6 +22,25 @@ export class AccountService {
   async getAddresses() {
     const addresses = await this.web3.eth.getAccounts();
     return addresses;
+  }
+
+  async generateWallet(): Promise<WalletDto> {
+    const newSeed = bip39.generateMnemonic();
+    const mnemonicToSeed = bip39.mnemonicToSeed(newSeed);
+    const hdwallet = hdkey.fromMasterSeed(mnemonicToSeed);
+    const wallet = hdwallet.derivePath(process.env.derivationPath).getWallet();
+    const getAddress = wallet.getAddress().toString('hex');
+    const getPriv = wallet.getPrivateKeyString().toString('hex');
+    const getPublic = wallet.getPublicKeyString().toString('hex');
+    const getChecksumAddress = ethUtil.toChecksumAddress(getAddress);
+    const address = ethUtil.addHexPrefix(getChecksumAddress);
+
+    return {
+      seed: newSeed,
+      privateKey: getPriv,
+      publicKey: getPublic,
+      address: address
+    };
   }
 
   async getBalance(acc): Promise<any> {
