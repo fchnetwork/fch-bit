@@ -9,6 +9,7 @@ const bip39   = require("bip39");
 
 @Component()
 export class AccountService {
+  derivationPath="m/44'/60'/0'/0/0";
   web3: any;
 
   constructor() {
@@ -28,7 +29,7 @@ export class AccountService {
     const newSeed = bip39.generateMnemonic();
     const mnemonicToSeed = bip39.mnemonicToSeed(newSeed);
     const hdwallet = hdkey.fromMasterSeed(mnemonicToSeed);
-    const wallet = hdwallet.derivePath(process.env.derivationPath).getWallet();
+    const wallet = hdwallet.derivePath(this.derivationPath).getWallet();
     const getAddress = wallet.getAddress().toString('hex');
     const getPriv = wallet.getPrivateKeyString().toString('hex');
     const getPublic = wallet.getPublicKeyString().toString('hex');
