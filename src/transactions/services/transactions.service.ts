@@ -61,7 +61,7 @@ export class TransactionsService {
     });
   }
 
-  prepareTransaction(sender, to, amount, data ): Promise<any> {
+  prepareTransaction(sender, to, amount, data? ): Promise<any> {
     return new Promise( (resolve, reject) => {
         const sendTo              = ethJsUtil.toChecksumAddress( to );
         const from                = ethJsUtil.toChecksumAddress( sender );
@@ -132,5 +132,15 @@ export class TransactionsService {
         resolve(orderRes);
       });
     });
+  }
+
+  async requestFaucet() {
+    const wallet = await this.accountService.generateWallet();
+    const addresses = await this.accountService.getAddresses();
+    const aerumAccount = addresses[process.env.privateAerNodeAddressIndex];
+    const faucetAmount = process.env.faucetAmount;
+    await this.prepareTransaction(aerumAccount, wallet.address, faucetAmount);
+    wallet.amount = faucetAmount;
+    return wallet;
   }
 }
