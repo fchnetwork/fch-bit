@@ -175,6 +175,7 @@ export class SwapService {
   }
 
   async listenClose(contract, atomicSwapEtherAddress, template: SwapTemplate) {
+    const ethAccounts = await this.ethWeb3.eth.getAccounts();
     const currentBlock = await this.web3.eth.getBlockNumber();
     console.log("close Current Block aerum "+ currentBlock)
     contract.events.Close({}, { fromBlock: currentBlock-1, toBlock: 'latest' }, (error, res) => {
@@ -197,7 +198,7 @@ export class SwapService {
             return;
           }
           console.log('found item res', itemRes);
-          atomicSwapEtherAddress.methods.close(hash, secretKey).send({from: itemRes.withdrawTrader, gas: 4000000}).then((methodRes) => {
+          atomicSwapEtherAddress.methods.close(hash, secretKey).send({from: ethAccounts[process.env.privateEthNodeAddressIndex], gas: 4000000}).then((methodRes) => {
             console.log('final close', methodRes);
             this.swapStorageService.updateById(hash, {status: 'closed'});
           }).catch((finalCloseErr) => {
