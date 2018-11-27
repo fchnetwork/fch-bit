@@ -4,6 +4,9 @@ import { Contract } from 'web3/types';
 
 const Web3 = require('web3');
 
+import { Observable } from 'rxjs/Observable';
+import 'rxjs/add/observable/timer';
+
 import { registrationBodyTemplate, validateEthAccountSwap, calcTokenAmount } from '../shared/helpers/swap-utils';
 import { SwapStorageService } from './swap-storage.service';
 import { OpenAtomicSwapERC20 } from './../abi/OpenAtomicSwapERC20';
@@ -15,16 +18,16 @@ import { AerumNameService } from '../shared/aerum-name-service/aerum-name.servic
 
 @Component()
 export class SwapErc20Service {
+  private transactionHashList = []
   private web3: any;
   private ethWeb3: any;
-
   private templateRateDecimals: number;
 
   constructor(private readonly swapStorageService: SwapStorageService,
     private readonly tokenService: TokenService,
     private readonly aerumNameService: AerumNameService) {
-    this.web3 = new Web3(new Web3.providers.WebsocketProvider(process.env.aerumProvider));
-    this.ethWeb3 = new Web3(new Web3.providers.WebsocketProvider(process.env.ethProvider));
+    this.web3 = new Web3(new Web3.providers.HttpProvider(process.env.aerumHttpProvider));
+    this.ethWeb3 = new Web3(new Web3.providers.HttpProvider(process.env.ethHttpProvider));
     this.templateRateDecimals = Number(process.env.templateRateDecimals);
   }
 
@@ -45,22 +48,49 @@ export class SwapErc20Service {
     const normalizedTemplate =  await this.aerumNameService.normalizeTemplate(template);
 
     // Open events registration
-    openAtomicSwapERC20Contract.events.Open({ fromBlock: aerCurrentBlock - 1 }, (error, res) => {
-      registrationBodyTemplate(erc20CurrentBlock, error, res,
-        async () => await this.openHandler(openAtomicSwapERC20Contract, counterAtomicSwapERC20Contract, normalizedTemplate, res));
-    });
+    Observable.timer(0, 10000)
+      .subscribe(_ => {
+        openAtomicSwapERC20Contract.getPastEvents('Open', { fromBlock: erc20CurrentBlock - 1, toBlock: 'latest' }, (error, txs) => {
+          txs.forEach(res => {
+            if(this.transactionHashList.findIndex(h => h === res.transactionHash) !== -1) {
+              return;
+            }
+            this.transactionHashList.push(res.transactionHash);
+            registrationBodyTemplate(erc20CurrentBlock, error, res,
+              async () => await this.openHandler(openAtomicSwapERC20Contract, counterAtomicSwapERC20Contract, normalizedTemplate, res));
+          });
+        })
+    })
 
     // Expire events registration
-    openAtomicSwapERC20Contract.events.Expire({ fromBlock: aerCurrentBlock - 1 }, (error, res) => {
-      registrationBodyTemplate(erc20CurrentBlock, error, res,
-        async () => await this.expireHandler(counterAtomicSwapERC20Contract, normalizedTemplate, res));
-    });
+    Observable.timer(0, 10000)
+      .subscribe(_ => {
+        openAtomicSwapERC20Contract.getPastEvents('Expire', { fromBlock: erc20CurrentBlock - 1, toBlock: 'latest' }, (error, txs) => {
+          txs.forEach(res => {
+            if(this.transactionHashList.findIndex(h => h === res.transactionHash) !== -1) {
+              return;
+            }
+            this.transactionHashList.push(res.transactionHash);
+            registrationBodyTemplate(erc20CurrentBlock, error, res,
+              async () => await this.expireHandler(counterAtomicSwapERC20Contract, normalizedTemplate, res));
+          });
+        })
+    })
 
     // Close events registration
-    counterAtomicSwapERC20Contract.events.Close({ fromBlock: aerCurrentBlock - 1 }, (error, res) => {
-      registrationBodyTemplate(aerCurrentBlock, error, res,
-        async () => await this.closeHandler(openAtomicSwapERC20Contract, normalizedTemplate, res));
-    });
+    Observable.timer(0, 10000)
+      .subscribe(_ => {
+        counterAtomicSwapERC20Contract.getPastEvents('Close', { fromBlock: aerCurrentBlock - 1, toBlock: 'latest' }, (error, txs) => {
+          txs.forEach(res => {
+            if(this.transactionHashList.findIndex(h => h === res.transactionHash) !== -1) {
+              return;
+            }
+            this.transactionHashList.push(res.transactionHash);
+            registrationBodyTemplate(aerCurrentBlock, error, res,
+              async () => await this.closeHandler(openAtomicSwapERC20Contract, normalizedTemplate, res));
+          });
+        })
+    })
   }
 
   // Handler for open events
@@ -133,6 +163,10 @@ export class SwapErc20Service {
         console.log("erc20 swap expire >>>>> swap is null. skipping");
         return;
       }
+      if(swap.tokenType !== TokenType.Erc20) {
+        console.log("erc20 swap expire >>>>> received close event, tokenType does not match, skipping");
+        return;
+      }
       if(swap.withdrawTrader !== template.offchainAccount) {
         console.log('erc20 swap expire >>>>> template trader doesn\'t match swap trader. skipping');
         return;
@@ -157,6 +191,10 @@ export class SwapErc20Service {
     this.swapStorageService.findById(hash).then(async (swap) => {
       if(!swap){
         console.log("erc20 swap close >>>>> received close event, swap is null, skipping");
+        return;
+      }
+      if(swap.tokenType !== TokenType.Erc20) {
+        console.log("erc20 swap close >>>>> received close event, tokenType does not match, skipping");
         return;
       }
       if(swap.withdrawTrader !== template.offchainAccount) {

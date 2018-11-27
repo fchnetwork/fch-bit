@@ -3,6 +3,9 @@ import { Contract } from 'web3/types';
 
 const Web3 = require('web3');
 
+import { Observable } from 'rxjs/Observable';
+import 'rxjs/add/observable/timer';
+
 import { registrationBodyTemplate, validateAerAccountSwap, calcEthAmount } from '../shared/helpers/swap-utils';
 import { SwapStorageService } from './swap-storage.service';
 import { OpenAtomicSwapERC20 } from './../abi/OpenAtomicSwapERC20';
@@ -13,17 +16,17 @@ import { AerumNameService } from '../shared/aerum-name-service/aerum-name.servic
 
 @Component()
 export class OppositeSwapService {
+  private transactionHashList = []
   web3: any;
   ethWeb3: any;
-
   tokenDigits: number;
   etherDigits = 18;
   templateRateDecimals = 18;
 
   constructor(private readonly swapStorageService: SwapStorageService,
     private readonly aerumNameService: AerumNameService) {
-    this.web3 = new Web3(new Web3.providers.WebsocketProvider(process.env.aerumProvider));
-    this.ethWeb3 = new Web3(new Web3.providers.WebsocketProvider(process.env.ethProvider));
+    this.web3 = new Web3(new Web3.providers.HttpProvider(process.env.aerumHttpProvider));
+    this.ethWeb3 = new Web3(new Web3.providers.HttpProvider(process.env.ethHttpProvider));
 
     this.tokenDigits = Number(process.env.presetTokenDigits);
   }
@@ -45,22 +48,49 @@ export class OppositeSwapService {
     const normalizedTemplate =  await this.aerumNameService.normalizeTemplate(template);
 
     // Open events registration
-    openAtomicSwapERC20Contract.events.Open({ fromBlock: aerCurrentBlock - 1 }, (error, res) => {
-      registrationBodyTemplate(aerCurrentBlock, error, res,
-        async () => await this.openHandler(openAtomicSwapERC20Contract, counterAtomicSwapEtherContract, normalizedTemplate, res));
-    });
+    Observable.timer(0, 10000)
+      .subscribe(_ => {
+        openAtomicSwapERC20Contract.getPastEvents('Open', { fromBlock: aerCurrentBlock - 1, toBlock: 'latest' }, (error, txs) => {
+          txs.forEach(res => {
+            if(this.transactionHashList.findIndex(h => h === res.transactionHash) !== -1) {
+              return;
+            }
+            this.transactionHashList.push(res.transactionHash);
+            registrationBodyTemplate(aerCurrentBlock, error, res,
+              async () => await this.openHandler(openAtomicSwapERC20Contract, counterAtomicSwapEtherContract, normalizedTemplate, res));
+          });
+        })
+      });
 
     // Expire events registration
-    openAtomicSwapERC20Contract.events.Expire({ fromBlock: aerCurrentBlock - 1 }, (error, res) => {
-      registrationBodyTemplate(aerCurrentBlock, error, res,
-        async () => await this.expireHandler(counterAtomicSwapEtherContract, normalizedTemplate, res));
-    });
+    Observable.timer(0, 10000)
+      .subscribe(_ => {
+        openAtomicSwapERC20Contract.getPastEvents('Expire', { fromBlock: aerCurrentBlock - 1, toBlock: 'latest' }, (error, txs) => {
+          txs.forEach(res => {
+            if(this.transactionHashList.findIndex(h => h === res.transactionHash) !== -1) {
+              return;
+            }
+            this.transactionHashList.push(res.transactionHash);
+            registrationBodyTemplate(aerCurrentBlock, error, res,
+              async () => await this.expireHandler(counterAtomicSwapEtherContract, normalizedTemplate, res));
+          });
+        })
+      });
 
     // Close events registration
-    counterAtomicSwapEtherContract.events.Close({ fromBlock: ethCurrentBlock - 1 }, (error, res) => {
-      registrationBodyTemplate(ethCurrentBlock, error, res,
-        async () => await this.closeHandler(openAtomicSwapERC20Contract, normalizedTemplate, res));
-    });
+    Observable.timer(0, 10000)
+      .subscribe(_ => {
+        counterAtomicSwapEtherContract.getPastEvents('Close', { fromBlock: ethCurrentBlock - 1, toBlock: 'latest' }, (error, txs) => {
+          txs.forEach(res => {
+            if(this.transactionHashList.findIndex(h => h === res.transactionHash) !== -1) {
+              return;
+            }
+            this.transactionHashList.push(res.transactionHash);
+            registrationBodyTemplate(ethCurrentBlock, error, res,
+              async () => await this.closeHandler(openAtomicSwapERC20Contract, normalizedTemplate, res));
+          });
+        })
+      });
   }
 
   // Handler for expire events
