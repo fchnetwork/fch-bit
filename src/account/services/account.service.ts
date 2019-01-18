@@ -1,6 +1,6 @@
-import { Component, Inject } from '@nestjs/common';
+import { Component } from '@nestjs/common';
 import { tokensABI } from '../../abi/tokens';
-import { WalletDto } from '../dto/wallet.dto';
+import { WalletDto } from '../dto/wallet.dto';;
 const Web3 = require('web3');
 
 const ethUtil = require('ethereumjs-util');
@@ -9,15 +9,15 @@ const bip39   = require("bip39");
 
 @Component()
 export class AccountService {
-  derivationPath="m/44'/60'/0'/0/0";
+  derivationPath: string = "m/44'/60'/0'/0/0";
   web3: any;
 
-  constructor() {
+  constructor( ) {
     this.web3 = this.initWeb3();
   }
 
   initWeb3 = () => {
-    return new Web3( new Web3.providers.WebsocketProvider(process.env.aerumProvider));
+    return new Web3(new Web3.providers.WebsocketProvider(process.env.aerumProvider));
   }
 
   async getAddresses() {
