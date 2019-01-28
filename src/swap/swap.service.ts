@@ -52,6 +52,7 @@ export class SwapService {
     Observable.timer(0, 10000)
       .subscribe(_ => {
         openAtomicSwapEthContract.getPastEvents('Open', { fromBlock: ethCurrentBlock - 1, toBlock: 'latest' }, (error, txs) => {
+          if(!txs) { return; }
           txs.forEach(res => {
             if(this.transactionHashList.findIndex(h => h === res.transactionHash) !== -1) {
               return;
@@ -67,6 +68,7 @@ export class SwapService {
     Observable.timer(0, 10000)
       .subscribe(_ => {
         openAtomicSwapEthContract.getPastEvents('Expire', { fromBlock: ethCurrentBlock - 1, toBlock: 'latest' }, (error, txs) => {
+          if(!txs) { return; }
           txs.forEach(res => {
             if(this.transactionHashList.findIndex(h => h === res.transactionHash) !== -1) {
               return;
@@ -82,6 +84,7 @@ export class SwapService {
     Observable.timer(0, 10000)
       .subscribe(_ => {
         counterAtomicSwapERC20Contract.getPastEvents('Close', { fromBlock: aerCurrentBlock - 1, toBlock: 'latest' }, (error, txs) => {
+          if(!txs) { return; }
           txs.forEach(res => {
             if(this.transactionHashList.findIndex(h => h === res.transactionHash) !== -1) {
               return;
