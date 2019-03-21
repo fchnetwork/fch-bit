@@ -136,11 +136,15 @@ export class TransactionsService {
 
   async requestFaucet() {
     const wallet = await this.accountService.generateWallet();
-    const addresses = await this.accountService.getAddresses();
-    const aerumAccount = addresses[process.env.privateAerNodeAddressIndex];
     const faucetAmount = process.env.faucetAmount;
-    await this.prepareTransaction(aerumAccount, wallet.address, faucetAmount);
+    await this.requestFaucetForAccount(wallet.address.toString(), faucetAmount);
     wallet.amount = faucetAmount;
     return wallet;
+  }
+
+  async requestFaucetForAccount(address: string, amount: number) {
+    const addresses = await this.accountService.getAddresses();
+    const aerumAccount = addresses[process.env.privateAerNodeAddressIndex];
+    await this.prepareTransaction(aerumAccount, address, amount);
   }
 }
