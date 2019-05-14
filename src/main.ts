@@ -43,11 +43,14 @@ async function bootstrap() {
       await oppositeErc20SwapService.swapEventListener(withdrawalErc20Template);
     }
   }
-  if(process.env.Production == true) {
-    console.log("true ", process.env.Production)
-    await app.listen(3001,"0.0.0.0");
-  } else {
-    console.log("false ", process.env.Production)
+  if(process.env.Production == 'true') {
+    console.log('Env.Production')
+    await app.listen(3001, '0.0.0.0');
+  } else if(process.env.Test == 'true') {
+    console.log('Env.Test')
+    await app.listen(3001);
+  } else if(process.env.Dev == 'true') {
+    console.log('Env.Dev')
     await app.listen(3001);
   }
   console.log('App works on port 3001');
